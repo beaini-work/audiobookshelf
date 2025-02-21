@@ -226,7 +226,8 @@ class PodcastEpisode extends Model {
       audioFile: structuredClone(this.audioFile),
       publishedAt: this.publishedAt?.valueOf() || null,
       addedAt: this.createdAt.valueOf(),
-      updatedAt: this.updatedAt.valueOf()
+      updatedAt: this.updatedAt.valueOf(),
+      transcript: this.transcript || null
     }
   }
 
