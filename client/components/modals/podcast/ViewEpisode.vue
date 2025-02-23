@@ -35,13 +35,17 @@
           </p>
         </div>
         <div class="flex-shrink-0 ml-4">
-          <ui-btn v-if="!isTranscribing && !hasTranscript" @click="transcribeEpisode" :loading="isTranscribing">
+          <ui-btn v-if="!isTranscribing && !isQueued && !hasTranscript" @click="transcribeEpisode" :loading="isTranscribing">
             <span class="material-symbols mr-2">record_voice_over</span>
             Transcribe
           </ui-btn>
           <ui-btn v-else-if="hasTranscript" @click="viewTranscript" variant="secondary">
             <span class="material-symbols mr-2">description</span>
             View Transcript
+          </ui-btn>
+          <ui-btn v-else-if="isQueued" disabled>
+            <span class="material-symbols mr-2">queue</span>
+            Queued for Transcription
           </ui-btn>
           <ui-btn v-else disabled>
             <span class="material-symbols mr-2 animate-spin">refresh</span>
@@ -58,7 +62,9 @@ export default {
   data() {
     return {
       processing: false,
-      isTranscribing: false
+      isTranscribing: false,
+      isQueued: false,
+      transcriptionQueueInterval: null
     }
   },
   computed: {
@@ -113,11 +119,21 @@ export default {
     }
   },
   methods: {
+    async checkTranscriptionStatus() {
+      try {
+        const response = await this.$axios.$get(`/api/podcasts/${this.libraryItem.id}/episode/${this.episodeId}/transcription-status`)
+        this.isQueued = response.queued.some((ep) => ep.episodeId === this.episodeId)
+      } catch (error) {
+        console.error('Failed to check transcription status', error)
+      }
+    },
     async transcribeEpisode() {
       try {
         this.isTranscribing = true
         await this.$axios.$post(`/api/podcasts/${this.libraryItem.id}/episode/${this.episodeId}/transcribe`)
         this.$toast.success('Transcription started')
+        this.transcriptionQueueInterval = setInterval(this.checkTranscriptionStatus, 5000)
+        await this.checkTranscriptionStatus()
       } catch (error) {
         console.error('Failed to start transcription', error)
         this.$toast.error(error.response?.data || 'Failed to start transcription')
@@ -126,13 +142,20 @@ export default {
       }
     },
     viewTranscript() {
-      // TODO: Implement transcript viewing modal
       this.$store.commit('globals/setShowTranscriptModal', {
         libraryItem: this.libraryItem,
         episode: this.episode
       })
     }
   },
-  mounted() {}
+  mounted() {
+    this.checkTranscriptionStatus()
+    this.transcriptionQueueInterval = setInterval(this.checkTranscriptionStatus, 5000)
+  },
+  beforeDestroy() {
+    if (this.transcriptionQueueInterval) {
+      clearInterval(this.transcriptionQueueInterval)
+    }
+  }
 }
 </script>

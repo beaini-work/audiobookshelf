@@ -19,6 +19,7 @@ const Scanner = require('../scanner/Scanner')
 const Database = require('../Database')
 const Watcher = require('../Watcher')
 const RssFeedManager = require('../managers/RssFeedManager')
+const TranscriptionManager = require('../managers/TranscriptionManager')
 
 const libraryFilters = require('../utils/queries/libraryFilters')
 const libraryItemsPodcastFilters = require('../utils/queries/libraryItemsPodcastFilters')
@@ -243,6 +244,18 @@ class LibraryController {
   async getEpisodeDownloadQueue(req, res) {
     const libraryDownloadQueueDetails = this.podcastManager.getDownloadQueueDetails(req.library.id)
     res.json(libraryDownloadQueueDetails)
+  }
+
+  /**
+   * GET: /api/libraries/:id/episode-transcriptions
+   * Get podcast episodes in transcription queue
+   *
+   * @param {LibraryControllerRequest} req
+   * @param {Response} res
+   */
+  async getEpisodeTranscriptionQueue(req, res) {
+    const libraryTranscriptionQueueDetails = TranscriptionManager.getDownloadQueueDetails(req.library.id)
+    res.json(libraryTranscriptionQueueDetails)
   }
 
   /**
