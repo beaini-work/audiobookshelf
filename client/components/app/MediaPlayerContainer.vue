@@ -1,5 +1,5 @@
 <template>
-  <div v-if="streamLibraryItem" id="mediaPlayerContainer" class="w-full fixed bottom-0 left-0 right-0 bg-primary px-2 lg:px-4 pb-1 lg:pb-4 pt-2" style="max-height: 90vh; overflow-y: auto">
+  <div v-if="streamLibraryItem" id="mediaPlayerContainer" class="w-full fixed bottom-0 left-0 right-0 bg-primary px-2 lg:px-4 pb-1 lg:pb-4 pt-2 z-50" style="max-height: 90vh; overflow-y: auto">
     <div class="absolute left-2 top-2 lg:left-4 cursor-pointer">
       <covers-book-cover expand-on-click :library-item="streamLibraryItem" :width="bookCoverWidth" :book-cover-aspect-ratio="coverAspectRatio" />
     </div>
