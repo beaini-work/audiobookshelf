@@ -1098,5 +1098,7 @@
   "MessageTaskTranscriptionFailed": "Failed to start transcription",
   "MessageTaskTranscriptionResultFailed": "Failed to get transcription result",
   "ToastTranscriptionStarted": "Transcription started",
-  "ToastTranscriptionFailed": "Failed to start transcription"
+  "ToastTranscriptionFailed": "Failed to start transcription",
+  "LabelShowCaptions": "Show Captions",
+  "LabelHideCaptions": "Hide Captions"
 }

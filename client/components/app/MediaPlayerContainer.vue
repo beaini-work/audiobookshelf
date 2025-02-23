@@ -1,5 +1,5 @@
 <template>
-  <div v-if="streamLibraryItem" id="mediaPlayerContainer" class="w-full fixed bottom-0 left-0 right-0 h-48 lg:h-40 z-50 bg-primary px-2 lg:px-4 pb-1 lg:pb-4 pt-2">
+  <div v-if="streamLibraryItem" id="mediaPlayerContainer" class="w-full fixed bottom-0 left-0 right-0 bg-primary px-2 lg:px-4 pb-1 lg:pb-4 pt-2" style="max-height: 90vh; overflow-y: auto">
     <div class="absolute left-2 top-2 lg:left-4 cursor-pointer">
       <covers-book-cover expand-on-click :library-item="streamLibraryItem" :width="bookCoverWidth" :book-cover-aspect-ratio="coverAspectRatio" />
     </div>
@@ -42,6 +42,8 @@
       :sleep-timer-type="sleepTimerType"
       :is-podcast="isPodcast"
       :hasNextItemInQueue="hasNextItemInQueue"
+      :transcript="currentTranscript"
+      :current-time="currentTime"
       @playPause="playPause"
       @jumpForward="jumpForward"
       @jumpBackward="jumpBackward"
@@ -178,6 +180,23 @@ export default {
     },
     playerQueueItems() {
       return this.$store.state.playerQueueItems || []
+    },
+    currentTranscript() {
+      if (!this.isPodcast || !this.streamEpisode) return null
+      if (typeof this.streamEpisode.transcript === 'string') {
+        try {
+          return JSON.parse(this.streamEpisode.transcript)
+        } catch (error) {
+          console.error('Failed to parse transcript JSON', error)
+          return [
+            {
+              transcript: this.streamEpisode.transcript,
+              words: []
+            }
+          ]
+        }
+      }
+      return this.streamEpisode.transcript
     }
   },
   methods: {
@@ -567,5 +586,19 @@ export default {
 <style>
 #mediaPlayerContainer {
   box-shadow: 0px -6px 8px #1111113f;
+}
+
+/* Add scrollbar styling */
+#mediaPlayerContainer::-webkit-scrollbar {
+  width: 8px;
+}
+
+#mediaPlayerContainer::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+#mediaPlayerContainer::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
 }
 </style>
