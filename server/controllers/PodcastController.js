@@ -12,8 +12,6 @@ const { validateUrl } = require('../utils/index')
 
 const Scanner = require('../scanner/Scanner')
 const CoverManager = require('../managers/CoverManager')
-const { Storage } = require('@google-cloud/storage')
-const { SpeechClient } = require('@google-cloud/speech')
 const TranscriptionManager = require('../managers/TranscriptionManager')
 
 /**

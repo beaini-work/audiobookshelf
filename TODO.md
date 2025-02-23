@@ -1,10 +1,18 @@
 # TODO
 
+## transcription
 - [ ] transcribe on download
 - [ ] add setting to transcribe on download
 - [ ] add config / setting to display transcript in player
+- [ ] setting for the size of the transcript
+- [ ] clicking transcript syncs to that time
 
+## search content
+
+## view summary
 - [ ] summarize
+
+## audio Q&A
 
 # fixes
 - [ ] can click transcribe multiple time to file that's queued
