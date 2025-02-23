@@ -18,7 +18,7 @@
       <p dir="auto" class="text-lg font-semibold mb-6">{{ title }}</p>
 
       <div v-if="transcript" class="whitespace-pre-wrap font-mono text-sm">
-        {{ transcript }}
+        {{ transcript.text }}
       </div>
       <div v-else class="text-center text-gray-300">
         <p>{{ $strings.MessageNoTranscriptAvailable }}</p>
@@ -65,7 +65,12 @@ export default {
       return this.mediaMetadata.author
     },
     transcript() {
-      return this.episode.transcript
+      try {
+        return JSON.parse(this.episode.transcript)
+      } catch (error) {
+        console.error('Failed to parse transcript JSON', error)
+        return null
+      }
     },
     bookCoverAspectRatio() {
       return this.$store.getters['libraries/getBookCoverAspectRatio']
