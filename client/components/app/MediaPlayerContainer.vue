@@ -1,9 +1,12 @@
 <template>
   <div v-if="streamLibraryItem" id="mediaPlayerContainer" class="w-full fixed bottom-0 left-0 right-0 bg-primary px-2 lg:px-4 pb-1 lg:pb-4 pt-2 z-50" style="max-height: 90vh; overflow-y: auto">
-    <div class="absolute left-2 top-2 lg:left-4 cursor-pointer">
-      <covers-book-cover expand-on-click :library-item="streamLibraryItem" :width="bookCoverWidth" :book-cover-aspect-ratio="coverAspectRatio" />
-    </div>
-    <div class="flex items-start mb-6 lg:mb-0" :class="isSquareCover ? 'pl-18 sm:pl-24' : 'pl-12 sm:pl-16'">
+    <!-- Add captions at the top -->
+    <player-captions v-if="isPodcast && currentTranscript && currentTranscript.length > 0 && captionsEnabled" :transcript="currentTranscript" :current-time="currentTime" @seek="seek" class="mb-4" />
+
+    <div class="flex items-start mb-6 lg:mb-0">
+      <div class="flex-shrink-0 mr-2 lg:mr-4">
+        <covers-book-cover expand-on-click :library-item="streamLibraryItem" :width="bookCoverWidth" :book-cover-aspect-ratio="coverAspectRatio" />
+      </div>
       <div class="min-w-0 w-full">
         <div class="flex items-center">
           <nuxt-link :to="`/item/${streamLibraryItem.id}`" class="hover:underline cursor-pointer text-sm sm:text-lg block truncate">
@@ -44,6 +47,7 @@
       :hasNextItemInQueue="hasNextItemInQueue"
       :transcript="currentTranscript"
       :current-time="currentTime"
+      :captionsEnabled="captionsEnabled"
       @playPause="playPause"
       @jumpForward="jumpForward"
       @jumpBackward="jumpBackward"
@@ -55,6 +59,7 @@
       @showBookmarks="showBookmarks"
       @showSleepTimer="showSleepTimerModal = true"
       @showPlayerQueueItems="showPlayerQueueItemsModal = true"
+      @toggleCaptions="toggleCaptions"
     />
 
     <modals-bookmarks-modal v-model="showBookmarksModal" :bookmarks="bookmarks" :current-time="bookmarkCurrentTime" :playback-rate="currentPlaybackRate" :library-item-id="libraryItemId" @select="selectBookmark" />
@@ -67,8 +72,12 @@
 
 <script>
 import PlayerHandler from '@/players/PlayerHandler'
+import PlayerCaptions from '../player/PlayerCaptions.vue'
 
 export default {
+  components: {
+    PlayerCaptions
+  },
   data() {
     return {
       playerHandler: new PlayerHandler(this),
@@ -88,7 +97,8 @@ export default {
       currentPlaybackRate: 1,
       syncFailedToast: null,
       coverAspectRatio: 1,
-      lastChapterId: null
+      lastChapterId: null,
+      captionsEnabled: true
     }
   },
   computed: {
@@ -200,6 +210,9 @@ export default {
     }
   },
   methods: {
+    toggleCaptions() {
+      this.captionsEnabled = !this.captionsEnabled
+    },
     mediaFinished(libraryItemId, episodeId) {
       // Play next item in queue
       if (!this.playerQueueItems.length || !this.$store.state.playerQueueAutoPlay) {

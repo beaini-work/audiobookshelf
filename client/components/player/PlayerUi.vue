@@ -86,9 +86,6 @@
         </div>
       </div>
 
-      <!-- Add captions component -->
-      <player-captions v-if="isPodcast && hasTranscript && captionsEnabled" :transcript="transcript" :current-time="currentTime" @seek="seek" class="mt-4" />
-
       <modals-chapters-modal v-model="showChaptersModal" :current-chapter="currentChapter" :playback-rate="playbackRate" :chapters="chapters" @select="selectChapter" />
 
       <modals-player-settings-modal v-model="showPlayerSettingsModal" />
@@ -406,7 +403,7 @@ export default {
       else if (action === this.$hotkeys.AudioPlayer.CLOSE) this.closePlayer()
     },
     toggleCaptions() {
-      this.captionsEnabled = !this.captionsEnabled
+      this.$emit('toggleCaptions')
     }
   },
   mounted() {
