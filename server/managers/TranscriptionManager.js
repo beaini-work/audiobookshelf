@@ -153,8 +153,27 @@ class TranscriptionManager {
         return
       }
 
-      // Store transcript
-      episode.transcript = response.results.map((result) => result.alternatives[0].transcript).join('\n')
+      // Store structured transcript with word timestamps
+      const structuredTranscript = response.results.map(result => {
+        const alternative = result.alternatives[0]
+        return {
+          transcript: alternative.transcript,
+          words: alternative.words.map(wordInfo => ({
+            word: wordInfo.word,
+            startTime: {
+              seconds: wordInfo.startTime.seconds,
+              nanos: wordInfo.startTime.nanos
+            },
+            endTime: {
+              seconds: wordInfo.endTime.seconds,
+              nanos: wordInfo.endTime.nanos
+            },
+            speakerTag: wordInfo.speakerTag
+          }))
+        }
+      })
+
+      episode.transcript = structuredTranscript
       delete episode.transcriptionOperation
       await episode.save()
 

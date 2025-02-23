@@ -119,8 +119,9 @@ class PodcastEpisode extends Model {
         chapters: DataTypes.JSON,
         extraData: DataTypes.JSON,
         transcript: {
-          type: DataTypes.TEXT,
-          allowNull: true
+          type: DataTypes.JSON,
+          allowNull: true,
+          defaultValue: null
         },
         transcriptionOperation: {
           type: DataTypes.STRING,
