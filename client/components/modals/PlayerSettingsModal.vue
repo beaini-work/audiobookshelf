@@ -66,7 +66,16 @@ export default {
       jumpForwardAmount: 10,
       jumpBackwardAmount: 10,
       playbackRateIncrementDecrementValues: [0.1, 0.05],
-      playbackRateIncrementDecrement: 0.1
+      playbackRateIncrementDecrement: 0.1,
+      currentCaptionSize: this.captionSize
+    }
+  },
+  watch: {
+    captionSize: {
+      immediate: true,
+      handler(newSize) {
+        this.currentCaptionSize = newSize
+      }
     }
   },
   computed: {
@@ -80,12 +89,12 @@ export default {
     },
     captionSizeLabel() {
       const sizes = {
-        0: 'Small',
-        1: 'Medium',
-        2: 'Large',
-        3: 'Extra Large'
+        0: 'Normal',
+        1: 'Large',
+        2: 'Extra Large',
+        3: 'Huge'
       }
-      return sizes[this.captionSize] || sizes[1]
+      return sizes[this.currentCaptionSize] || sizes[2]
     }
   },
   methods: {
@@ -112,9 +121,15 @@ export default {
     },
     increaseCaptionSize() {
       this.$emit('increaseCaptionSize')
+      if (this.currentCaptionSize < 3) {
+        this.currentCaptionSize++
+      }
     },
     decreaseCaptionSize() {
       this.$emit('decreaseCaptionSize')
+      if (this.currentCaptionSize > 0) {
+        this.currentCaptionSize--
+      }
     }
   },
   mounted() {
