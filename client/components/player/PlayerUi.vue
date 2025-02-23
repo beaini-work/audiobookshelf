@@ -9,6 +9,12 @@
             <controls-volume-control ref="volumeControl" v-model="volume" @input="setVolume" class="mx-2 hidden sm:block" />
           </ui-tooltip>
 
+          <ui-tooltip v-if="isPodcast && hasTranscript" direction="bottom" :text="captionsEnabled ? $strings.LabelHideCaptions : $strings.LabelShowCaptions">
+            <button :aria-label="captionsEnabled ? $strings.LabelHideCaptions : $strings.LabelShowCaptions" class="text-gray-300 hover:text-white mx-2 hidden sm:block" @mousedown.prevent @mouseup.prevent @click.stop="toggleCaptions">
+              <span class="material-symbols text-2xl">{{ captionsEnabled ? 'closed_caption' : 'closed_caption_disabled' }}</span>
+            </button>
+          </ui-tooltip>
+
           <ui-tooltip v-if="!hideSleepTimer" direction="top" :text="$strings.LabelSleepTimer">
             <button :aria-label="$strings.LabelSleepTimer" class="text-gray-300 hover:text-white mx-1 lg:mx-2" @mousedown.prevent @mouseup.prevent @click.stop="$emit('showSleepTimer')">
               <span v-if="!sleepTimerSet" class="material-symbols text-2xl">snooze</span>
@@ -44,7 +50,23 @@
           </ui-tooltip>
         </div>
 
-        <player-playback-controls :loading="loading" :seek-loading="seekLoading" :playback-rate.sync="playbackRate" :paused="paused" :hasNextChapter="hasNextChapter" :hasNextItemInQueue="hasNextItemInQueue" @prevChapter="prevChapter" @next="goToNext" @jumpForward="jumpForward" @jumpBackward="jumpBackward" @setPlaybackRate="setPlaybackRate" @playPause="playPause" />
+        <player-playback-controls
+          :loading="loading"
+          :seek-loading="seekLoading"
+          :playback-rate.sync="playbackRate"
+          :paused="paused"
+          :hasNextChapter="hasNextChapter"
+          :hasNextItemInQueue="hasNextItemInQueue"
+          :hasTranscript="hasTranscript"
+          :captionsEnabled="captionsEnabled"
+          @prevChapter="prevChapter"
+          @next="goToNext"
+          @jumpForward="jumpForward"
+          @jumpBackward="jumpBackward"
+          @setPlaybackRate="setPlaybackRate"
+          @playPause="playPause"
+          @toggleCaptions="toggleCaptions"
+        />
       </div>
 
       <player-track-bar ref="trackbar" :loading="loading" :chapters="chapters" :duration="duration" :current-chapter="currentChapter" :playback-rate="playbackRate" @seek="seek" />
@@ -65,7 +87,7 @@
       </div>
 
       <!-- Add captions component -->
-      <player-captions v-if="isPodcast && hasTranscript" :transcript="transcript" :current-time="currentTime" @seek="seek" class="mt-4" />
+      <player-captions v-if="isPodcast && hasTranscript && captionsEnabled" :transcript="transcript" :current-time="currentTime" @seek="seek" class="mt-4" />
 
       <modals-chapters-modal v-model="showChaptersModal" :current-chapter="currentChapter" :playback-rate="playbackRate" :chapters="chapters" @select="selectChapter" />
 
@@ -114,7 +136,8 @@ export default {
       showChaptersModal: false,
       showPlayerSettingsModal: false,
       currentTime: 0,
-      duration: 0
+      duration: 0,
+      captionsEnabled: true
     }
   },
   watch: {
@@ -381,6 +404,9 @@ export default {
       else if (action === this.$hotkeys.AudioPlayer.INCREASE_PLAYBACK_RATE) this.increasePlaybackRate()
       else if (action === this.$hotkeys.AudioPlayer.DECREASE_PLAYBACK_RATE) this.decreasePlaybackRate()
       else if (action === this.$hotkeys.AudioPlayer.CLOSE) this.closePlayer()
+    },
+    toggleCaptions() {
+      this.captionsEnabled = !this.captionsEnabled
     }
   },
   mounted() {

@@ -1,33 +1,10 @@
 <template>
   <div v-if="show" class="w-full bg-black bg-opacity-80 p-4 rounded-lg shadow-lg">
     <div class="relative">
-      <!-- Caption controls -->
-      <div class="absolute top-0 right-0 flex items-center space-x-2">
-        <ui-tooltip direction="top" :text="show ? $strings.LabelHideCaptions : $strings.LabelShowCaptions">
-          <button @click="toggleCaptions" class="text-gray-300 hover:text-white">
-            <span class="material-symbols text-xl">{{ show ? 'closed_caption_disabled' : 'closed_caption' }}</span>
-          </button>
-        </ui-tooltip>
-      </div>
-
       <!-- Current caption text -->
       <div ref="captionContainer" class="max-h-32 overflow-y-auto">
         <div v-if="currentSegment" class="text-center">
-          <p class="text-lg text-white mb-2">{{ currentSegment.transcript }}</p>
-          <div class="flex flex-wrap justify-center gap-1">
-            <span
-              v-for="(word, index) in currentSegment.words"
-              :key="index"
-              :class="{
-                'text-white font-bold': isWordActive(word),
-                'text-gray-400': !isWordActive(word)
-              }"
-              class="text-sm transition-colors duration-200 cursor-pointer hover:text-white"
-              @click="seekToWord(word)"
-            >
-              {{ word.word }}
-            </span>
-          </div>
+          <p class="text-lg text-white">{{ currentSegment.transcript }}</p>
         </div>
         <div v-else class="text-white text-sm text-center">No captions available</div>
       </div>
@@ -50,8 +27,7 @@ export default {
   data() {
     return {
       show: true,
-      currentSegment: null,
-      currentWordIndex: -1
+      currentSegment: null
     }
   },
   watch: {
@@ -71,22 +47,9 @@ export default {
       }
       return parseFloat(seconds) || 0
     },
-    isWordActive(word) {
-      if (!word?.startTime?.seconds || !word?.endTime?.seconds) return false
-      const startTime = this.getWordTime(word)
-      const endSeconds = word.endTime.seconds
-      let endTime = 0
-      if (typeof endSeconds === 'object' && 'low' in endSeconds && 'high' in endSeconds) {
-        endTime = endSeconds.low + endSeconds.high * Math.pow(2, 32)
-      } else {
-        endTime = parseFloat(endSeconds) || 0
-      }
-      return this.currentTime >= startTime && this.currentTime <= endTime
-    },
     updateCurrentSegment(currentTime) {
       if (!this.transcript?.length) {
         this.currentSegment = null
-        this.currentWordIndex = -1
         return
       }
 
@@ -99,35 +62,14 @@ export default {
 
         if (currentTime >= segmentStart && currentTime <= segmentEnd) {
           this.currentSegment = segment
-
-          // Find current word
-          for (let j = 0; j < segment.words.length; j++) {
-            if (this.isWordActive(segment.words[j])) {
-              this.currentWordIndex = j
-              this.$nextTick(() => {
-                const activeWord = this.$refs.word?.[j]
-                if (activeWord) {
-                  activeWord.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                }
-              })
-              return
-            }
-          }
           return
         }
       }
 
       this.currentSegment = null
-      this.currentWordIndex = -1
     },
     toggleCaptions() {
       this.show = !this.show
-    },
-    seekToWord(word) {
-      if (word?.startTime) {
-        const time = this.getWordTime(word)
-        this.$emit('seek', time)
-      }
     }
   }
 }
