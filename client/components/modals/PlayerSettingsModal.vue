@@ -17,6 +17,24 @@
       <div class="flex items-center mb-4">
         <ui-select-input v-model="playbackRateIncrementDecrement" :label="$strings.LabelPlaybackRateIncrementDecrement" menuMaxHeight="250px" :items="playbackRateIncrementDecrementValues" @input="setPlaybackRateIncrementDecrementAmount" />
       </div>
+
+      <!-- Caption Size Controls -->
+      <div v-if="hasCaptions" class="flex items-center mb-4">
+        <div class="flex-grow">
+          <p class="text-sm mb-2">Caption Size</p>
+          <div class="flex items-center">
+            <button class="text-gray-300 hover:text-white" @click="decreaseCaptionSize">
+              <span class="material-symbols text-2xl">text_decrease</span>
+            </button>
+            <div class="mx-4 min-w-12 text-center">
+              <span class="text-sm">{{ captionSizeLabel }}</span>
+            </div>
+            <button class="text-gray-300 hover:text-white" @click="increaseCaptionSize">
+              <span class="material-symbols text-2xl">text_increase</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </modals-modal>
 </template>
@@ -24,7 +42,15 @@
 <script>
 export default {
   props: {
-    value: Boolean
+    value: Boolean,
+    hasCaptions: {
+      type: Boolean,
+      default: false
+    },
+    captionSize: {
+      type: Number,
+      default: 1
+    }
   },
   data() {
     return {
@@ -51,6 +77,15 @@ export default {
       set(val) {
         this.$emit('input', val)
       }
+    },
+    captionSizeLabel() {
+      const sizes = {
+        0: 'Small',
+        1: 'Medium',
+        2: 'Large',
+        3: 'Extra Large'
+      }
+      return sizes[this.captionSize] || sizes[1]
     }
   },
   methods: {
@@ -74,6 +109,12 @@ export default {
       this.jumpForwardAmount = this.$store.getters['user/getUserSetting']('jumpForwardAmount')
       this.jumpBackwardAmount = this.$store.getters['user/getUserSetting']('jumpBackwardAmount')
       this.playbackRateIncrementDecrement = this.$store.getters['user/getUserSetting']('playbackRateIncrementDecrement')
+    },
+    increaseCaptionSize() {
+      this.$emit('increaseCaptionSize')
+    },
+    decreaseCaptionSize() {
+      this.$emit('decreaseCaptionSize')
     }
   },
   mounted() {

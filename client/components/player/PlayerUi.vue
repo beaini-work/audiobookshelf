@@ -88,7 +88,7 @@
 
       <modals-chapters-modal v-model="showChaptersModal" :current-chapter="currentChapter" :playback-rate="playbackRate" :chapters="chapters" @select="selectChapter" />
 
-      <modals-player-settings-modal v-model="showPlayerSettingsModal" />
+      <modals-player-settings-modal v-model="showPlayerSettingsModal" :has-captions="isPodcast && hasTranscript" :caption-size="captionSize" @increaseCaptionSize="$emit('increaseCaptionSize')" @decreaseCaptionSize="$emit('decreaseCaptionSize')" />
     </div>
   </div>
 </template>

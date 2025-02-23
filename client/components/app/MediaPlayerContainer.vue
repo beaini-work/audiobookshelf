@@ -1,7 +1,7 @@
 <template>
-  <div v-if="streamLibraryItem" id="mediaPlayerContainer" class="w-full fixed bottom-0 left-0 right-0 bg-primary px-2 lg:px-4 pb-1 lg:pb-4 pt-2 z-50" style="max-height: 90vh; overflow-y: auto">
+  <div v-if="streamLibraryItem" id="mediaPlayerContainer" class="w-full fixed bottom-0 left-0 right-0 bg-primary px-2 lg:px-4 pb-1 lg:pb-4 pt-2 z-50" style="max-height: 70vh; overflow-y: auto">
     <!-- Add captions at the top -->
-    <player-captions v-if="isPodcast && currentTranscript && currentTranscript.length > 0 && captionsEnabled" :transcript="currentTranscript" :current-time="currentTime" @seek="seek" class="mb-4" />
+    <player-captions v-if="isPodcast && currentTranscript && currentTranscript.length > 0 && captionsEnabled" :transcript="currentTranscript" :current-time="currentTime" :caption-size="captionSize" @seek="seek" class="mb-4" />
 
     <div class="flex items-start mb-6 lg:mb-0">
       <div class="flex-shrink-0 mr-2 lg:mr-4">
@@ -48,6 +48,7 @@
       :transcript="currentTranscript"
       :current-time="currentTime"
       :captionsEnabled="captionsEnabled"
+      :caption-size="captionSize"
       @playPause="playPause"
       @jumpForward="jumpForward"
       @jumpBackward="jumpBackward"
@@ -60,6 +61,8 @@
       @showSleepTimer="showSleepTimerModal = true"
       @showPlayerQueueItems="showPlayerQueueItemsModal = true"
       @toggleCaptions="toggleCaptions"
+      @increaseCaptionSize="increaseCaptionSize"
+      @decreaseCaptionSize="decreaseCaptionSize"
     />
 
     <modals-bookmarks-modal v-model="showBookmarksModal" :bookmarks="bookmarks" :current-time="bookmarkCurrentTime" :playback-rate="currentPlaybackRate" :library-item-id="libraryItemId" @select="selectBookmark" />
@@ -98,7 +101,8 @@ export default {
       syncFailedToast: null,
       coverAspectRatio: 1,
       lastChapterId: null,
-      captionsEnabled: true
+      captionsEnabled: true,
+      captionSize: 2
     }
   },
   computed: {
@@ -574,6 +578,16 @@ export default {
         console.log('sessionClosedEvent closing current session', sessionId)
         this.playerHandler.resetPlayer() // Closes player without reporting to server
         this.$store.commit('setMediaPlaying', null)
+      }
+    },
+    increaseCaptionSize() {
+      if (this.captionSize < 3) {
+        this.captionSize++
+      }
+    },
+    decreaseCaptionSize() {
+      if (this.captionSize > 0) {
+        this.captionSize--
       }
     }
   },
