@@ -34,6 +34,24 @@
             {{ audioFileSize }}
           </p>
         </div>
+        <div class="flex-shrink-0 ml-4">
+          <ui-btn v-if="transcriptionsEnabled && !isTranscribing && !isQueued && !hasTranscript" @click="transcribeEpisode" :loading="isTranscribing">
+            <span class="material-symbols mr-2">record_voice_over</span>
+            Transcribe
+          </ui-btn>
+          <ui-btn v-else-if="hasTranscript" @click="viewTranscript" variant="secondary">
+            <span class="material-symbols mr-2">description</span>
+            View Transcript
+          </ui-btn>
+          <ui-btn v-else-if="isQueued" disabled>
+            <span class="material-symbols mr-2">queue</span>
+            Queued for Transcription
+          </ui-btn>
+          <ui-btn v-else-if="isTranscribing" disabled>
+            <span class="material-symbols mr-2 animate-spin">refresh</span>
+            Transcribing...
+          </ui-btn>
+        </div>
       </div>
     </div>
   </modals-modal>
@@ -43,7 +61,23 @@
 export default {
   data() {
     return {
-      processing: false
+      processing: false,
+      isTranscribing: false,
+      isQueued: false,
+      transcriptionQueueInterval: null
+    }
+  },
+  watch: {
+    libraryItem: {
+      immediate: true,
+      handler(newVal) {
+        if (newVal && this.episodeId) {
+          this.checkTranscriptionStatus()
+          if (!this.transcriptionQueueInterval) {
+            this.transcriptionQueueInterval = setInterval(this.checkTranscriptionStatus, 5000)
+          }
+        }
+      }
     }
   },
   computed: {
@@ -92,9 +126,52 @@ export default {
     },
     bookCoverAspectRatio() {
       return this.$store.getters['libraries/getBookCoverAspectRatio']
+    },
+    hasTranscript() {
+      return this.episode.transcript != null
+    },
+    transcriptionsEnabled() {
+      return this.$store.state.serverSettings?.transcriptionsEnabled ?? false
     }
   },
-  methods: {},
-  mounted() {}
+  methods: {
+    async checkTranscriptionStatus() {
+      try {
+        if (!this.libraryItem || !this.episodeId) return
+        const response = await this.$axios.$get(`/api/podcasts/${this.libraryItem.id}/episode/${this.episodeId}/transcription-status`)
+        this.isQueued = response.queued.some((ep) => ep.episodeId === this.episodeId)
+      } catch (error) {
+        console.error('Failed to check transcription status', error)
+      }
+    },
+    async transcribeEpisode() {
+      try {
+        this.isTranscribing = true
+        await this.$axios.$post(`/api/podcasts/${this.libraryItem.id}/episode/${this.episodeId}/transcribe`)
+        this.$toast.success('Transcription started')
+        this.transcriptionQueueInterval = setInterval(this.checkTranscriptionStatus, 5000)
+        await this.checkTranscriptionStatus()
+      } catch (error) {
+        console.error('Failed to start transcription', error)
+        this.$toast.error(error.response?.data || 'Failed to start transcription')
+      } finally {
+        this.isTranscribing = false
+      }
+    },
+    viewTranscript() {
+      this.$store.commit('globals/setShowTranscriptModal', {
+        libraryItem: this.libraryItem,
+        episode: this.episode
+      })
+    }
+  },
+  mounted() {
+    // Remove the direct transcription status check from mounted
+  },
+  beforeDestroy() {
+    if (this.transcriptionQueueInterval) {
+      clearInterval(this.transcriptionQueueInterval)
+    }
+  }
 }
 </script>

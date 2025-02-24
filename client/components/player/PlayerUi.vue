@@ -1,76 +1,105 @@
 <template>
-  <div class="w-full -mt-6">
-    <div class="w-full relative mb-1">
-      <div class="absolute -top-10 lg:top-0 right-0 lg:right-2 flex items-center h-full">
-        <controls-playback-speed-control v-model="playbackRate" @input="setPlaybackRate" @change="playbackRateChanged" :playbackRateIncrementDecrement="playbackRateIncrementDecrement" class="mx-2 block" />
+  <div class="w-full">
+    <div class="w-full -mt-6">
+      <div class="w-full relative mb-1">
+        <div class="absolute -top-10 lg:top-0 right-0 lg:right-2 flex items-center h-full">
+          <controls-playback-speed-control v-model="playbackRate" @input="setPlaybackRate" @change="playbackRateChanged" :playbackRateIncrementDecrement="playbackRateIncrementDecrement" class="mx-2 block" />
 
-        <ui-tooltip direction="bottom" :text="$strings.LabelVolume">
-          <controls-volume-control ref="volumeControl" v-model="volume" @input="setVolume" class="mx-2 hidden sm:block" />
-        </ui-tooltip>
+          <ui-tooltip direction="bottom" :text="$strings.LabelVolume">
+            <controls-volume-control ref="volumeControl" v-model="volume" @input="setVolume" class="mx-2 hidden sm:block" />
+          </ui-tooltip>
 
-        <ui-tooltip v-if="!hideSleepTimer" direction="top" :text="$strings.LabelSleepTimer">
-          <button :aria-label="$strings.LabelSleepTimer" class="text-gray-300 hover:text-white mx-1 lg:mx-2" @mousedown.prevent @mouseup.prevent @click.stop="$emit('showSleepTimer')">
-            <span v-if="!sleepTimerSet" class="material-symbols text-2xl">snooze</span>
-            <div v-else class="flex items-center">
-              <span class="material-symbols text-lg text-warning">snooze</span>
-              <p class="text-sm sm:text-lg text-warning font-semibold text-center px-0.5 sm:pb-0.5 sm:min-w-8">{{ sleepTimerRemainingString }}</p>
-            </div>
-          </button>
-        </ui-tooltip>
+          <ui-tooltip v-if="isPodcast && hasTranscript" direction="bottom" :text="captionsEnabled ? $strings.LabelHideCaptions : $strings.LabelShowCaptions">
+            <button :aria-label="captionsEnabled ? $strings.LabelHideCaptions : $strings.LabelShowCaptions" class="text-gray-300 hover:text-white mx-2 hidden sm:block" @mousedown.prevent @mouseup.prevent @click.stop="toggleCaptions">
+              <span class="material-symbols text-2xl">{{ captionsEnabled ? 'closed_caption' : 'closed_caption_disabled' }}</span>
+            </button>
+          </ui-tooltip>
 
-        <ui-tooltip v-if="!isPodcast && !hideBookmarks" direction="top" :text="$strings.LabelViewBookmarks">
-          <button :aria-label="$strings.LabelViewBookmarks" class="text-gray-300 hover:text-white mx-1 lg:mx-2" @mousedown.prevent @mouseup.prevent @click.stop="$emit('showBookmarks')">
-            <span class="material-symbols text-2xl">{{ bookmarks.length ? 'bookmarks' : 'bookmark_border' }}</span>
-          </button>
-        </ui-tooltip>
+          <ui-tooltip v-if="!hideSleepTimer" direction="top" :text="$strings.LabelSleepTimer">
+            <button :aria-label="$strings.LabelSleepTimer" class="text-gray-300 hover:text-white mx-1 lg:mx-2" @mousedown.prevent @mouseup.prevent @click.stop="$emit('showSleepTimer')">
+              <span v-if="!sleepTimerSet" class="material-symbols text-2xl">snooze</span>
+              <div v-else class="flex items-center">
+                <span class="material-symbols text-lg text-warning">snooze</span>
+                <p class="text-sm sm:text-lg text-warning font-semibold text-center px-0.5 sm:pb-0.5 sm:min-w-8">{{ sleepTimerRemainingString }}</p>
+              </div>
+            </button>
+          </ui-tooltip>
 
-        <ui-tooltip v-if="chapters.length" direction="top" :text="$strings.LabelViewChapters">
-          <button :aria-label="$strings.LabelViewChapters" class="text-gray-300 hover:text-white mx-1 lg:mx-2" @mousedown.prevent @mouseup.prevent @click.stop="showChapters">
-            <span class="material-symbols text-2xl">format_list_bulleted</span>
-          </button>
-        </ui-tooltip>
+          <ui-tooltip v-if="!isPodcast && !hideBookmarks" direction="top" :text="$strings.LabelViewBookmarks">
+            <button :aria-label="$strings.LabelViewBookmarks" class="text-gray-300 hover:text-white mx-1 lg:mx-2" @mousedown.prevent @mouseup.prevent @click.stop="$emit('showBookmarks')">
+              <span class="material-symbols text-2xl">{{ bookmarks.length ? 'bookmarks' : 'bookmark_border' }}</span>
+            </button>
+          </ui-tooltip>
 
-        <ui-tooltip v-if="playerQueueItems.length" direction="top" :text="$strings.LabelViewQueue">
-          <button :aria-label="$strings.LabelViewQueue" class="outline-none text-gray-300 mx-1 lg:mx-2 hover:text-white" @mousedown.prevent @mouseup.prevent @click.stop="$emit('showPlayerQueueItems')">
-            <span class="material-symbols text-2.5xl sm:text-3xl">playlist_play</span>
-          </button>
-        </ui-tooltip>
+          <ui-tooltip v-if="chapters.length" direction="top" :text="$strings.LabelViewChapters">
+            <button :aria-label="$strings.LabelViewChapters" class="text-gray-300 hover:text-white mx-1 lg:mx-2" @mousedown.prevent @mouseup.prevent @click.stop="showChapters">
+              <span class="material-symbols text-2xl">format_list_bulleted</span>
+            </button>
+          </ui-tooltip>
 
-        <ui-tooltip direction="top" :text="$strings.LabelViewPlayerSettings">
-          <button :aria-label="$strings.LabelViewPlayerSettings" class="outline-none text-gray-300 mx-1 lg:mx-2 hover:text-white" @mousedown.prevent @mouseup.prevent @click.stop="showPlayerSettings">
-            <span class="material-symbols text-2xl sm:text-2.5xl">settings_slow_motion</span>
-          </button>
-        </ui-tooltip>
+          <ui-tooltip v-if="playerQueueItems.length" direction="top" :text="$strings.LabelViewQueue">
+            <button :aria-label="$strings.LabelViewQueue" class="outline-none text-gray-300 mx-1 lg:mx-2 hover:text-white" @mousedown.prevent @mouseup.prevent @click.stop="$emit('showPlayerQueueItems')">
+              <span class="material-symbols text-2.5xl sm:text-3xl">playlist_play</span>
+            </button>
+          </ui-tooltip>
+
+          <ui-tooltip direction="top" :text="$strings.LabelViewPlayerSettings">
+            <button :aria-label="$strings.LabelViewPlayerSettings" class="outline-none text-gray-300 mx-1 lg:mx-2 hover:text-white" @mousedown.prevent @mouseup.prevent @click.stop="showPlayerSettings">
+              <span class="material-symbols text-2xl sm:text-2.5xl">settings_slow_motion</span>
+            </button>
+          </ui-tooltip>
+        </div>
+
+        <player-playback-controls
+          :loading="loading"
+          :seek-loading="seekLoading"
+          :playback-rate.sync="playbackRate"
+          :paused="paused"
+          :hasNextChapter="hasNextChapter"
+          :hasNextItemInQueue="hasNextItemInQueue"
+          :hasTranscript="hasTranscript"
+          :captionsEnabled="captionsEnabled"
+          @prevChapter="prevChapter"
+          @next="goToNext"
+          @jumpForward="jumpForward"
+          @jumpBackward="jumpBackward"
+          @setPlaybackRate="setPlaybackRate"
+          @playPause="playPause"
+          @toggleCaptions="toggleCaptions"
+        />
       </div>
 
-      <player-playback-controls :loading="loading" :seek-loading="seekLoading" :playback-rate.sync="playbackRate" :paused="paused" :hasNextChapter="hasNextChapter" :hasNextItemInQueue="hasNextItemInQueue" @prevChapter="prevChapter" @next="goToNext" @jumpForward="jumpForward" @jumpBackward="jumpBackward" @setPlaybackRate="setPlaybackRate" @playPause="playPause" />
+      <player-track-bar ref="trackbar" :loading="loading" :chapters="chapters" :duration="duration" :current-chapter="currentChapter" :playback-rate="playbackRate" @seek="seek" />
+
+      <div class="relative flex items-center justify-between">
+        <div class="flex-grow flex items-center">
+          <p ref="currentTimestamp" class="font-mono text-xxs sm:text-sm text-gray-100 pointer-events-auto">00:00:00</p>
+          <p class="font-mono text-sm hidden sm:block text-gray-100 pointer-events-auto">&nbsp;/&nbsp;{{ progressPercent }}%</p>
+        </div>
+        <div class="absolute left-1/2 transform -translate-x-1/2">
+          <p class="text-xs sm:text-sm text-gray-300 pt-0.5 px-2 truncate">
+            {{ currentChapterName }} <span v-if="useChapterTrack" class="text-xs text-gray-400">&nbsp;({{ $getString('LabelPlayerChapterNumberMarker', [currentChapterIndex + 1, chapters.length]) }})</span>
+          </p>
+        </div>
+        <div class="flex-grow flex items-center justify-end">
+          <p class="font-mono text-xxs sm:text-sm text-gray-100 pointer-events-auto">{{ timeRemainingPretty }}</p>
+        </div>
+      </div>
+
+      <modals-chapters-modal v-model="showChaptersModal" :current-chapter="currentChapter" :playback-rate="playbackRate" :chapters="chapters" @select="selectChapter" />
+
+      <modals-player-settings-modal v-model="showPlayerSettingsModal" :has-captions="isPodcast && hasTranscript" :caption-size="captionSize" @increaseCaptionSize="$emit('increaseCaptionSize')" @decreaseCaptionSize="$emit('decreaseCaptionSize')" />
     </div>
-
-    <player-track-bar ref="trackbar" :loading="loading" :chapters="chapters" :duration="duration" :current-chapter="currentChapter" :playback-rate="playbackRate" @seek="seek" />
-
-    <div class="relative flex items-center justify-between">
-      <div class="flex-grow flex items-center">
-        <p ref="currentTimestamp" class="font-mono text-xxs sm:text-sm text-gray-100 pointer-events-auto">00:00:00</p>
-        <p class="font-mono text-sm hidden sm:block text-gray-100 pointer-events-auto">&nbsp;/&nbsp;{{ progressPercent }}%</p>
-      </div>
-      <div class="absolute left-1/2 transform -translate-x-1/2">
-        <p class="text-xs sm:text-sm text-gray-300 pt-0.5 px-2 truncate">
-          {{ currentChapterName }} <span v-if="useChapterTrack" class="text-xs text-gray-400">&nbsp;({{ $getString('LabelPlayerChapterNumberMarker', [currentChapterIndex + 1, chapters.length]) }})</span>
-        </p>
-      </div>
-      <div class="flex-grow flex items-center justify-end">
-        <p class="font-mono text-xxs sm:text-sm text-gray-100 pointer-events-auto">{{ timeRemainingPretty }}</p>
-      </div>
-    </div>
-
-    <modals-chapters-modal v-model="showChaptersModal" :current-chapter="currentChapter" :playback-rate="playbackRate" :chapters="chapters" @select="selectChapter" />
-
-    <modals-player-settings-modal v-model="showPlayerSettingsModal" />
   </div>
 </template>
 
 <script>
+import PlayerCaptions from './PlayerCaptions.vue'
+
 export default {
+  components: {
+    PlayerCaptions
+  },
   props: {
     loading: Boolean,
     paused: Boolean,
@@ -89,7 +118,11 @@ export default {
     isPodcast: Boolean,
     hideBookmarks: Boolean,
     hideSleepTimer: Boolean,
-    hasNextItemInQueue: Boolean
+    hasNextItemInQueue: Boolean,
+    transcript: {
+      type: Array,
+      default: () => []
+    }
   },
   data() {
     return {
@@ -100,7 +133,8 @@ export default {
       showChaptersModal: false,
       showPlayerSettingsModal: false,
       currentTime: 0,
-      duration: 0
+      duration: 0,
+      captionsEnabled: true
     }
   },
   watch: {
@@ -110,6 +144,15 @@ export default {
     useChapterTrack() {
       if (this.$refs.trackbar) this.$refs.trackbar.setUseChapterTrack(this.useChapterTrack)
       this.updateTimestamp()
+    },
+    transcript: {
+      immediate: true,
+      handler(newTranscript) {
+        console.log('🔵 PLAYER UI TRANSCRIPT CHANGED 🔵', {
+          hasTranscript: !!newTranscript?.length,
+          transcript: newTranscript
+        })
+      }
     }
   },
   computed: {
@@ -183,6 +226,9 @@ export default {
     },
     playbackRateIncrementDecrement() {
       return this.$store.getters['user/getUserSetting']('playbackRateIncrementDecrement')
+    },
+    hasTranscript() {
+      return this.transcript && this.transcript.length > 0
     }
   },
   methods: {
@@ -355,9 +401,18 @@ export default {
       else if (action === this.$hotkeys.AudioPlayer.INCREASE_PLAYBACK_RATE) this.increasePlaybackRate()
       else if (action === this.$hotkeys.AudioPlayer.DECREASE_PLAYBACK_RATE) this.decreasePlaybackRate()
       else if (action === this.$hotkeys.AudioPlayer.CLOSE) this.closePlayer()
+    },
+    toggleCaptions() {
+      this.$emit('toggleCaptions')
     }
   },
   mounted() {
+    console.log('🔵 PLAYER UI MOUNTED 🔵', {
+      isPodcast: this.isPodcast,
+      hasTranscript: this.hasTranscript,
+      transcript: this.transcript
+    })
+
     this.$eventBus.$on('player-hotkey', this.hotkey)
     this.$eventBus.$on('user-settings', this.settingsUpdated)
 

@@ -130,6 +130,20 @@
             </ui-tooltip>
           </div>
 
+          <div class="pt-4">
+            <h2 class="font-semibold">{{ $strings.HeaderSettingsPodcasts }}</h2>
+          </div>
+
+          <div role="article" :aria-label="$strings.LabelSettingsTranscriptionsEnabledHelp" class="flex items-center py-2">
+            <ui-toggle-switch :label="$strings.LabelSettingsTranscriptionsEnabled" v-model="newServerSettings.transcriptionsEnabled" :disabled="updatingServerSettings" @input="(val) => updateSettingsKey('transcriptionsEnabled', val)" />
+            <ui-tooltip aria-hidden="true" :text="$strings.LabelSettingsTranscriptionsEnabledHelp">
+              <p class="pl-4">
+                <span id="settings-transcriptions-enabled">{{ $strings.LabelSettingsTranscriptionsEnabled }}</span>
+                <span class="material-symbols icon-text">info</span>
+              </p>
+            </ui-tooltip>
+          </div>
+
           <div class="flex-grow py-2">
             <ui-dropdown :label="$strings.LabelSettingsDateFormat" v-model="newServerSettings.dateFormat" :items="dateFormats" small class="max-w-52" @input="(val) => updateSettingsKey('dateFormat', val)" />
             <p class="text-xs ml-1 text-white text-opacity-60">{{ $strings.LabelExample }}: {{ dateExample }}</p>

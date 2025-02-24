@@ -42,6 +42,7 @@ class ServerSettings {
 
     // Podcasts
     this.podcastEpisodeSchedule = '0 * * * *' // Every hour
+    this.transcriptionsEnabled = true // Enable/disable transcription functionality
 
     // Sorting
     this.sortingIgnorePrefix = false
@@ -112,6 +113,9 @@ class ServerSettings {
 
     this.homeBookshelfView = settings.homeBookshelfView || BookshelfView.STANDARD
     this.bookshelfView = settings.bookshelfView || BookshelfView.STANDARD
+
+    this.podcastEpisodeSchedule = settings.podcastEpisodeSchedule || '0 * * * *'
+    this.transcriptionsEnabled = settings.transcriptionsEnabled !== undefined ? !!settings.transcriptionsEnabled : true
 
     this.sortingIgnorePrefix = !!settings.sortingIgnorePrefix
     this.sortingPrefixes = settings.sortingPrefixes || ['the']
@@ -224,6 +228,7 @@ class ServerSettings {
       homeBookshelfView: this.homeBookshelfView,
       bookshelfView: this.bookshelfView,
       podcastEpisodeSchedule: this.podcastEpisodeSchedule,
+      transcriptionsEnabled: this.transcriptionsEnabled,
       sortingIgnorePrefix: this.sortingIgnorePrefix,
       sortingPrefixes: [...this.sortingPrefixes],
       chromecastEnabled: this.chromecastEnabled,

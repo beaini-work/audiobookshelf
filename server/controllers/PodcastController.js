@@ -12,6 +12,7 @@ const { validateUrl } = require('../utils/index')
 
 const Scanner = require('../scanner/Scanner')
 const CoverManager = require('../managers/CoverManager')
+const TranscriptionManager = require('../managers/TranscriptionManager')
 
 /**
  * @typedef RequestUserObject
@@ -537,6 +538,73 @@ class PodcastController {
 
     req.libraryItem = libraryItem
     next()
+  }
+
+  /**
+   * POST /api/podcasts/:id/episode/:episodeId/transcribe
+   * Start transcription for an episode
+   *
+   * @param {RequestWithLibraryItem} req
+   * @param {Response} res
+   */
+  async transcribeEpisode(req, res) {
+    if (!req.user.isAdminOrUp) {
+      Logger.error(`[PodcastController] Non-admin user "${req.user.username}" attempted to transcribe episode`)
+      return res.sendStatus(403)
+    }
+
+    if (!Database.serverSettings.transcriptionsEnabled) {
+      Logger.error(`[PodcastController] Transcriptions are disabled in server settings`)
+      return res.status(400).send('Transcriptions are disabled')
+    }
+
+    const episode = req.libraryItem.media.podcastEpisodes.find((ep) => ep.id === req.params.episodeId)
+    if (!episode) {
+      Logger.error(`[PodcastController] Episode not found "${req.params.episodeId}"`)
+      return res.status(404).send('Episode not found')
+    }
+
+    if (!episode.audioFile) {
+      Logger.error(`[PodcastController] Episode has no audio file "${req.params.episodeId}"`)
+      return res.status(400).send('Episode has no audio file')
+    }
+
+    try {
+      await TranscriptionManager.startTranscription(req.libraryItem, episode)
+      res.sendStatus(200)
+    } catch (error) {
+      Logger.error('[PodcastController] Failed to start transcription', error)
+      res.status(500).send('Failed to start transcription')
+    }
+  }
+
+  /**
+   * GET /api/podcasts/:id/episode/:episodeId/transcription-status
+   * Get transcription status for an episode
+   * 
+   * @param {RequestWithLibraryItem} req
+   * @param {Response} res
+   */
+  async getTranscriptionStatus(req, res) {
+    if (!req.libraryItem) {
+      Logger.error(`[PodcastController] Library item not found "${req.params.id}"`)
+      return res.status(404).send('Library item not found')
+    }
+
+    const episodesInQueue = TranscriptionManager.getEpisodesInQueue(req.libraryItem.id)
+    if (!episodesInQueue) {
+      return res.json({
+        queued: []
+      })
+    }
+
+    res.json({
+      queued: episodesInQueue.map(ep => ({
+        episodeId: ep.episodeId,
+        episodeTitle: ep.episodeTitle,
+        podcastTitle: ep.podcastTitle
+      }))
+    })
   }
 }
 module.exports = new PodcastController()

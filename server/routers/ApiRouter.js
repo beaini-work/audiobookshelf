@@ -75,6 +75,7 @@ class ApiRouter {
     this.router.get('/libraries/:id/items', LibraryController.middleware.bind(this), LibraryController.getLibraryItems.bind(this))
     this.router.delete('/libraries/:id/issues', LibraryController.middleware.bind(this), LibraryController.removeLibraryItemsWithIssues.bind(this))
     this.router.get('/libraries/:id/episode-downloads', LibraryController.middleware.bind(this), LibraryController.getEpisodeDownloadQueue.bind(this))
+    this.router.get('/libraries/:id/episode-transcriptions', LibraryController.middleware.bind(this), LibraryController.getEpisodeTranscriptionQueue.bind(this))
     this.router.get('/libraries/:id/series', LibraryController.middleware.bind(this), LibraryController.getAllSeriesForLibrary.bind(this))
     this.router.get('/libraries/:id/series/:seriesId', LibraryController.middleware.bind(this), LibraryController.getSeriesForLibrary.bind(this))
     this.router.get('/libraries/:id/collections', LibraryController.middleware.bind(this), LibraryController.getCollectionsForLibrary.bind(this))
@@ -252,7 +253,8 @@ class ApiRouter {
     this.router.get('/podcasts/:id/episode/:episodeId', PodcastController.middleware.bind(this), PodcastController.getEpisode.bind(this))
     this.router.patch('/podcasts/:id/episode/:episodeId', PodcastController.middleware.bind(this), PodcastController.updateEpisode.bind(this))
     this.router.delete('/podcasts/:id/episode/:episodeId', PodcastController.middleware.bind(this), PodcastController.removeEpisode.bind(this))
-
+    this.router.post('/podcasts/:id/episode/:episodeId/transcribe', PodcastController.middleware.bind(this), PodcastController.transcribeEpisode.bind(this))
+    this.router.get('/podcasts/:id/episode/:episodeId/transcription-status', PodcastController.middleware.bind(this), PodcastController.getTranscriptionStatus.bind(this))
     //
     // Notification Routes (Admin and up)
     //

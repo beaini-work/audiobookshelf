@@ -28,7 +28,9 @@ module.exports = {
       lang: 'en'
     },
     meta: [{ charset: 'utf-8' }, { name: 'viewport', content: 'width=device-width, initial-scale=1' }, { hid: 'description', name: 'description', content: '' }, { hid: 'robots', name: 'robots', content: 'noindex' }],
-    script: [],
+    script: [
+      { src: 'http://localhost:8098' }
+    ],
     link: [
       { rel: 'icon', type: 'image/x-icon', href: routerBasePath + '/favicon.ico' },
       { rel: 'apple-touch-icon', href: routerBasePath + '/ios_icon.png' }

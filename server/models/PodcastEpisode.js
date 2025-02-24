@@ -50,6 +50,10 @@ class PodcastEpisode extends Model {
     this.createdAt
     /** @type {Date} */
     this.updatedAt
+    /** @type {string} */
+    this.transcript
+    /** @type {string} */
+    this.transcriptionOperation
   }
 
   /**
@@ -113,7 +117,16 @@ class PodcastEpisode extends Model {
 
         audioFile: DataTypes.JSON,
         chapters: DataTypes.JSON,
-        extraData: DataTypes.JSON
+        extraData: DataTypes.JSON,
+        transcript: {
+          type: DataTypes.JSON,
+          allowNull: true,
+          defaultValue: null
+        },
+        transcriptionOperation: {
+          type: DataTypes.STRING,
+          allowNull: true
+        }
       },
       {
         sequelize,
@@ -214,7 +227,8 @@ class PodcastEpisode extends Model {
       audioFile: structuredClone(this.audioFile),
       publishedAt: this.publishedAt?.valueOf() || null,
       addedAt: this.createdAt.valueOf(),
-      updatedAt: this.updatedAt.valueOf()
+      updatedAt: this.updatedAt.valueOf(),
+      transcript: this.transcript || null
     }
   }
 

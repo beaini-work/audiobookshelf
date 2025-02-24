@@ -8,5 +8,9 @@ ENV NODE_ENV=development
 # Install additional OS packages.
 RUN apt-get update && \
   DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends \
-    curl tzdata ffmpeg && \
+  curl tzdata ffmpeg && \
   rm -rf /var/lib/apt/lists/*
+
+# Create podcasts directory and set permissions
+RUN mkdir -p /home/node/podcasts && \
+  chown -R node:node /home/node/podcasts

@@ -211,6 +211,8 @@
   "HeaderUsers": "Users",
   "HeaderYearReview": "Year {0} in Review",
   "HeaderYourStats": "Your Stats",
+  "HeaderCurrentTranscriptions": "Current Transcriptions",
+  "HeaderTranscriptionQueue": "Transcription Queue",
   "LabelAbridged": "Abridged",
   "LabelAbridgedChecked": "Abridged (checked)",
   "LabelAbridgedUnchecked": "Unabridged (unchecked)",
@@ -1089,5 +1091,17 @@
   "ToastUserPasswordChangeSuccess": "Password changed successfully",
   "ToastUserPasswordMismatch": "Passwords do not match",
   "ToastUserPasswordMustChange": "New password cannot match old password",
-  "ToastUserRootRequireName": "Must enter a root username"
+  "ToastUserRootRequireName": "Must enter a root username",
+  "MessageNoTranscriptionsInProgress": "No transcriptions in progress",
+  "MessageTranscribingEpisode": "Transcribing episode",
+  "MessageTaskTranscribingEpisodeDescription": "Transcribing episode \"{0}\"",
+  "MessageTaskTranscriptionFailed": "Failed to start transcription",
+  "MessageTaskTranscriptionResultFailed": "Failed to get transcription result",
+  "ToastTranscriptionStarted": "Transcription started",
+  "ToastTranscriptionFailed": "Failed to start transcription",
+  "LabelShowCaptions": "Show Captions",
+  "LabelHideCaptions": "Hide Captions",
+  "HeaderSettingsPodcasts": "Podcasts",
+  "LabelSettingsTranscriptionsEnabled": "Enable Transcriptions",
+  "LabelSettingsTranscriptionsEnabledHelp": "Enable or disable transcription functionality across the app. When disabled, no new transcriptions can be created."
 }
