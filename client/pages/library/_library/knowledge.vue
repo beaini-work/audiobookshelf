@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="knowledge-page">
     <div class="bg-primary p-8 md:px-12 w-full">
       <div class="flex flex-col max-w-5xl mx-auto">
         <h1 class="text-2xl md:text-3xl font-semibold mb-4">Knowledge Base</h1>
@@ -220,7 +220,20 @@ export default {
 }
 </script>
 
-<style scoped>
+<style>
+.knowledge-page {
+  /* Push content up to cover the toolbar */
+  margin-top: -10px;
+  position: relative;
+  z-index: 50; /* Higher than the toolbar z-index of 40 */
+}
+
+/* Hide the toolbar specifically for the knowledge page */
+.knowledge-page ~ div #toolbar {
+  display: none !important;
+}
+
+/* Ensure material symbols still work */
 .material-symbols {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }

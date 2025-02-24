@@ -66,7 +66,7 @@ export default {
       return !this.$route.name.startsWith('config') && this.currentLibraryId
     },
     isShowingToolbar() {
-      return this.isShowingSideRail && this.$route.name !== 'upload' && this.$route.name !== 'account'
+      return this.isShowingSideRail && this.$route.name !== 'upload' && this.$route.name !== 'account' && this.$route.name !== 'library-library-knowledge'
     },
     appContentMarginLeft() {
       return this.isShowingSideRail ? 80 : 0
