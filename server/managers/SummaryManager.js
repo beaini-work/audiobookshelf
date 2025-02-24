@@ -94,8 +94,8 @@ REFINED SUMMARY:
 
   getQueueDetails(libraryId) {
     return {
-      queue: this.summaryQueue.filter(t => t.libraryId === libraryId).map(t => t.toJSONForClient()),
-      currentSummary: this.currentSummary?.toJSONForClient() || null
+      queue: this.summaryQueue.filter(t => t.libraryId === libraryId),
+      currentSummary: this.currentSummary || null
     }
   }
 

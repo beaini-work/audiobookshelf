@@ -87,14 +87,14 @@ class Database {
     return this.models.podcastEpisode
   }
 
+  /** @type {typeof import('./models/PodcastEpisodeSummary')} */
+  get podcastEpisodeSummaryModel() {
+    return this.models.PodcastEpisodeSummary
+  }
+
   /** @type {typeof import('./models/LibraryItem')} */
   get libraryItemModel() {
     return this.models.libraryItem
-  }
-
-  /** @type {typeof import('./models/PodcastEpisode')} */
-  get podcastEpisodeModel() {
-    return this.models.podcastEpisode
   }
 
   /** @type {typeof import('./models/MediaProgress')} */
@@ -316,6 +316,7 @@ class Database {
     require('./models/Book').init(this.sequelize)
     require('./models/Podcast').init(this.sequelize)
     require('./models/PodcastEpisode').init(this.sequelize)
+    require('./models/PodcastEpisodeSummary').init(this.sequelize)
     require('./models/LibraryItem').init(this.sequelize)
     require('./models/MediaProgress').init(this.sequelize)
     require('./models/Series').init(this.sequelize)

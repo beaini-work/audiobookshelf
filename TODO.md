@@ -16,6 +16,8 @@
 - [ ] search the vector store. where in the UI?
 - [ ] automate vectorization of new content
 - [ ] vector store the content
+- [ ] openai key in docker deployment
+- [ ] ability to configure the summaries
 
 ## view summary
 
@@ -56,6 +58,7 @@
 # highly optional todos
 
 - [ ] change chromadb credentials
+- [ ] update table name of summaries. inconsistent naming pattern
 - [ ] remove chromadb server init check cause it's not working
 - [ ] notify front end when transcription is complete
 - [ ] clicking transcript syncs to that time

@@ -383,42 +383,6 @@ class ApiRouter {
       }
     })
 
-    this.router.get('/podcasts/:podcastId/episodes/:episodeId/summary/status', this.auth.ifAuthNeeded, async (req, res) => {
-      try {
-        const libraryItem = await Database.libraryItemModel.getExpandedById(req.params.podcastId)
-        if (!libraryItem) {
-          return res.status(404).send({ error: 'Podcast not found' })
-        }
-
-        const episode = libraryItem.media.podcastEpisodes.find(ep => ep.id === req.params.episodeId)
-        if (!episode) {
-          return res.status(404).send({ error: 'Episode not found' })
-        }
-
-        const queueDetails = this.summaryManager.getQueueDetails(libraryItem.libraryId)
-        const isQueued = queueDetails.queue.some(item => item.episodeId === episode.id)
-        const isCurrentlyProcessing = queueDetails.currentSummary?.episodeId === episode.id
-
-        const summary = await Database.PodcastEpisodeSummary.findOne({
-          where: { episodeId: episode.id }
-        })
-
-        res.send({
-          status: summary?.status || 'not_started',
-          isQueued,
-          isCurrentlyProcessing,
-          queuePosition: isQueued ? 
-            queueDetails.queue.findIndex(item => item.episodeId === episode.id) + 1 : 
-            null,
-          error: summary?.error,
-          updatedAt: summary?.updatedAt
-        })
-      } catch (error) {
-        Logger.error('[ApiRouter] Error checking summary status:', error)
-        res.status(500).send({ error: 'Failed to check summary status' })
-      }
-    })
-
     this.router.delete('/podcasts/:podcastId/episodes/:episodeId/summary', this.auth.ifAuthNeeded, async (req, res) => {
       try {
         const libraryItem = await Database.libraryItemModel.getExpandedById(req.params.podcastId)

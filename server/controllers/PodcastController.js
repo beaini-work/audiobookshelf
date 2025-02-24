@@ -3,14 +3,10 @@ const { Request, Response, NextFunction } = require('express')
 const Logger = require('../Logger')
 const SocketAuthority = require('../SocketAuthority')
 const Database = require('../Database')
-const SummaryManager = require('../managers/SummaryManager')
-
-const fs = require('../libs/fsExtra')
-
+const Server = require('../Server')
 const { getPodcastFeed, findMatchingEpisodes } = require('../utils/podcastUtils')
 const { getFileTimestampsWithIno, filePathToPOSIX } = require('../utils/fileUtils')
 const { validateUrl } = require('../utils/index')
-
 const Scanner = require('../scanner/Scanner')
 const CoverManager = require('../managers/CoverManager')
 const TranscriptionManager = require('../managers/TranscriptionManager')
@@ -29,13 +25,20 @@ const TranscriptionManager = require('../managers/TranscriptionManager')
 
 class PodcastController {
   constructor() {
-    this.summaryManager = new SummaryManager()
+    this.summaryManager = Server.summaryManager
 
     // Bind methods to this instance
     this.startSummaryGeneration = this.startSummaryGeneration.bind(this)
     this.getSummaryStatus = this.getSummaryStatus.bind(this)
     this.getSummary = this.getSummary.bind(this)
     this.deleteSummary = this.deleteSummary.bind(this)
+    
+    // Make sure summaryManager is initialized
+    if (!this.summaryManager) {
+      const SummaryManager = require('../managers/SummaryManager')
+      this.summaryManager = new SummaryManager()
+      Logger.info('[PodcastController] SummaryManager initialized')
+    }
   }
 
   /**
@@ -653,25 +656,31 @@ class PodcastController {
    */
   async getSummaryStatus(req, res) {
     try {
-      const episode = this.libraryItem.media.podcastEpisodes.find(ep => ep.id === req.params.episodeId)
+      // Check if summaryManager is available
+      if (!this.summaryManager) {
+        Logger.error('[PodcastController] SummaryManager not initialized')
+        return res.status(500).send({ error: 'Summary service not available' })
+      }
+
+      const episode = req.libraryItem.media.podcastEpisodes.find(ep => ep.id === req.params.episodeId)
       if (!episode) {
         return res.status(404).send({ error: 'Episode not found' })
       }
 
-      const queueDetails = this.summaryManager.getQueueDetails(this.libraryItem.libraryId)
+      const queueDetails = this.summaryManager.getQueueDetails(req.libraryItem.libraryId)
       const isQueued = queueDetails.queue.some(item => 
-        item.libraryItemId === this.libraryItem.id && item.episodeId === episode.id
+        item.libraryItemId === req.libraryItem.id && item.episodeId === episode.id
       )
       const isCurrentlyProcessing = queueDetails.currentSummary && 
-        queueDetails.currentSummary.libraryItemId === this.libraryItem.id && 
+        queueDetails.currentSummary.libraryItemId === req.libraryItem.id && 
         queueDetails.currentSummary.episodeId === episode.id
 
       const queuePosition = isQueued ? 
         queueDetails.queue.findIndex(item => 
-          item.libraryItemId === this.libraryItem.id && item.episodeId === episode.id
+          item.libraryItemId === req.libraryItem.id && item.episodeId === episode.id
         ) + 1 : 0
 
-      const summary = await Database.PodcastEpisodeSummary.findOne({
+      const summary = await Database.podcastEpisodeSummaryModel.findOne({
         where: { episodeId: episode.id }
       })
 
@@ -696,12 +705,12 @@ class PodcastController {
    */
   async getSummary(req, res) {
     try {
-      const episode = this.libraryItem.media.podcastEpisodes.find(ep => ep.id === req.params.episodeId)
+      const episode = req.libraryItem.media.podcastEpisodes.find(ep => ep.id === req.params.episodeId)
       if (!episode) {
         return res.status(404).send({ error: 'Episode not found' })
       }
 
-      const summary = await Database.PodcastEpisodeSummary.findOne({
+      const summary = await Database.podcastEpisodeSummaryModel.findOne({
         where: { episodeId: episode.id }
       })
 
@@ -731,12 +740,12 @@ class PodcastController {
    */
   async deleteSummary(req, res) {
     try {
-      const episode = this.libraryItem.media.podcastEpisodes.find(ep => ep.id === req.params.episodeId)
+      const episode = req.libraryItem.media.podcastEpisodes.find(ep => ep.id === req.params.episodeId)
       if (!episode) {
         return res.status(404).send({ error: 'Episode not found' })
       }
 
-      await Database.PodcastEpisodeSummary.destroy({
+      await Database.podcastEpisodeSummaryModel.destroy({
         where: { episodeId: episode.id }
       })
 
