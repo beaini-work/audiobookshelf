@@ -10,7 +10,7 @@
 
 ## search content
 
-- [ ] create new left navbar called Knowledge (rethink term later)
+- [X] create new left navbar called Knowledge (rethink term later)
 - [ ] use chromadb with persistent storage for vector store
 - [ ] button to vectorize the content on demand
 - [ ] search the vector store. where in the UI?
