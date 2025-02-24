@@ -38,6 +38,9 @@ const BinaryManager = require('./managers/BinaryManager')
 const ShareManager = require('./managers/ShareManager')
 const LibraryScanner = require('./scanner/LibraryScanner')
 const SummaryManager = require('./managers/SummaryManager')
+const TranscriptQAManager = require('./managers/TranscriptQAManager')
+const transcriptRoutes = require('./routes/transcriptRoutes')
+const chromaManager = require('./managers/ChromaManager')
 
 //Import the main Passport and Express-Session library
 const passport = require('passport')
@@ -112,6 +115,7 @@ class Server {
     this.apiCacheManager = new ApiCacheManager()
     this.binaryManager = new BinaryManager()
     this.summaryManager = new SummaryManager()
+    this.transcriptQAManager = require('./managers/TranscriptQAManager')
 
     // Routers
     this.apiRouter = new ApiRouter(this)
@@ -189,8 +193,8 @@ class Server {
         LibraryScanner.scanFilesChanged(pendingFileUpdates, pendingTask)
       })
     }
-
-    await this.checkChromaDBConnection()
+    
+    await this.transcriptQAManager.initialize()
   }
 
   /**
@@ -319,6 +323,7 @@ class Server {
     router.use('/api', this.auth.ifAuthNeeded(this.authMiddleware.bind(this)), this.apiRouter.router)
     router.use('/hls', this.authMiddleware.bind(this), this.hlsRouter.router)
     router.use('/public', this.publicRouter.router)
+    router.use('/api/transcripts', this.auth.ifAuthNeeded(this.authMiddleware.bind(this)), transcriptRoutes)
 
     // Static path to generated nuxt
     const distPath = Path.join(global.appRoot, '/client/dist')
@@ -491,21 +496,5 @@ class Server {
     Logger.info('[Server] HTTP Server Closed')
   }
 
-  async checkChromaDBConnection() {
-    try {
-      const testClient = new ChromaClient({
-        path: 'http://10.10.2.248:8000',
-        auth: {
-          provider: 'basic',
-          credentials: 'admin:admin'
-        }
-      })
-      await testClient.heartbeat()
-      Logger.info('[Server] ChromaDB connection successful')
-    } catch (error) {
-      Logger.warn('[Server] WARNING: ChromaDB connection failed - Summary features will be disabled')
-      Logger.warn('[Server] Make sure ChromaDB is running: docker run -p 8000:8000 chromadb/chroma:latest')
-    }
-  }
 }
 module.exports = Server

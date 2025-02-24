@@ -9,6 +9,7 @@ const dbMigration = require('./utils/migrations/dbMigration')
 const Auth = require('./Auth')
 
 const MigrationManager = require('./managers/MigrationManager')
+const { TranscriptChunk, initTranscriptChunk } = require('./models/TranscriptChunk')
 
 class Database {
   constructor() {
@@ -31,6 +32,8 @@ class Database {
 
     this.supportsUnaccent = false
     this.supportsUnicodeFoldings = false
+
+    this.transcriptChunkModel = null
   }
 
   get models() {
@@ -197,6 +200,10 @@ class Database {
     Logger.info(`[Database] running ANALYZE`)
     await this.sequelize.query('ANALYZE')
     Logger.info(`[Database] ANALYZE completed`)
+
+    // Initialize TranscriptChunk model
+    this.transcriptChunkModel = initTranscriptChunk(this.sequelize)
+    await this.transcriptChunkModel.sync({ force: force })
   }
 
   /**

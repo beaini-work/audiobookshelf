@@ -71,6 +71,7 @@
 
 # highly optional todos
 
+- [ ] display suggested questions to ask in the knowledge base
 - [ ] change chromadb credentials
 - [ ] update table name of summaries. inconsistent naming pattern
 - [ ] remove chromadb server init check cause it's not working

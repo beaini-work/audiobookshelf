@@ -61,6 +61,34 @@ export const getters = {
   getHomeBookshelfView: (state) => {
     if (!state.serverSettings || isNaN(state.serverSettings.homeBookshelfView)) return Constants.BookshelfView.STANDARD
     return state.serverSettings.homeBookshelfView
+  },
+  getLibraryItemById: (state, getters, rootState) => (id) => {
+    const allLibraries = rootState.libraries.libraries || []
+    for (const library of allLibraries) {
+      const items = library.items || []
+      const item = items.find(item => item.id === id)
+      if (item) return item
+    }
+    return null
+  },
+  getAllPodcasts: (state, getters, rootState, rootGetters) => {
+    const allPodcasts = []
+    const allLibraries = rootState.libraries.libraries || []
+    const userAccessibleLibraries = rootGetters['user/getLibrariesAccessible'] || []
+    const canAccessAllLibraries = rootGetters['user/getUserCanAccessAllLibraries']
+    
+    for (const library of allLibraries) {
+      if (!canAccessAllLibraries && !userAccessibleLibraries.includes(library.id)) {
+        continue
+      }
+      
+      if (library.mediaType === 'podcast') {
+        const items = library.items || []
+        allPodcasts.push(...items)
+      }
+    }
+    
+    return allPodcasts
   }
 }
 
