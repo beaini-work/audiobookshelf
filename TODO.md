@@ -5,6 +5,7 @@
 - [ ] add setting to transcribe on download
 - [X] add config / setting to display transcript in player
 - [X] setting for the size of the transcript
+- [ ] check if can transcript on this server before turning it on
 - [ ] clicking transcript syncs to that time
 
 ## search content

@@ -67,6 +67,19 @@ export default {
       transcriptionQueueInterval: null
     }
   },
+  watch: {
+    libraryItem: {
+      immediate: true,
+      handler(newVal) {
+        if (newVal && this.episodeId) {
+          this.checkTranscriptionStatus()
+          if (!this.transcriptionQueueInterval) {
+            this.transcriptionQueueInterval = setInterval(this.checkTranscriptionStatus, 5000)
+          }
+        }
+      }
+    }
+  },
   computed: {
     show: {
       get() {
@@ -124,6 +137,7 @@ export default {
   methods: {
     async checkTranscriptionStatus() {
       try {
+        if (!this.libraryItem || !this.episodeId) return
         const response = await this.$axios.$get(`/api/podcasts/${this.libraryItem.id}/episode/${this.episodeId}/transcription-status`)
         this.isQueued = response.queued.some((ep) => ep.episodeId === this.episodeId)
       } catch (error) {
@@ -152,8 +166,7 @@ export default {
     }
   },
   mounted() {
-    this.checkTranscriptionStatus()
-    this.transcriptionQueueInterval = setInterval(this.checkTranscriptionStatus, 5000)
+    // Remove the direct transcription status check from mounted
   },
   beforeDestroy() {
     if (this.transcriptionQueueInterval) {
