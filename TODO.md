@@ -11,8 +11,8 @@
 ## search content
 
 - [X] create new left navbar called Knowledge (rethink term later)
-- [ ] use chromadb with persistent storage for vector store
-- [ ] button to vectorize the content on demand
+- [X] use chromadb with persistent storage for vector store
+- [X] button to vectorize the content on demand
 - [ ] search the vector store. where in the UI?
 - [ ] automate vectorization of new content
 - [ ] vector store the content
@@ -22,6 +22,17 @@
 ## view summary
 
 - [ ] Button to transcribe and summarize
+- [ ] Display summaries in the Knowledge section
+- [ ] clean up the summarize UI
+- [ ] Fix font color in view episode modal when text is selected (currently not visible)
+- [ ] Show transcript content directly in transcript tab instead of requiring button click
+- [ ] Improve CTA placement and design for Generate Summary and Transcribe buttons:
+  - [ ] Place buttons prominently in center of empty tab state
+  - [ ] Use consistent button styling and hierarchy
+  - [ ] Add clear visual feedback for button states (disabled, loading, etc)
+  - [ ] Include helpful empty state messaging
+  - [ ] Ensure adequate spacing and padding around buttons
+  - [ ] Use appropriate button variants to indicate primary/secondary actions
 
 ## finissage
 
@@ -33,6 +44,7 @@
 
 - [ ] can click transcribe multiple time to file that's queued
 - [ ] can view the non-exitent transcipt before it's done
+<<<<<<< HEAD
 - [ ]
 - [  transcribe on download
 - [ ] add setting to transcribe on download
@@ -53,6 +65,8 @@
 # fixes
 - [ ] can click transcribe multiple time to file that's queued
 - [ ] can view the non-exitent transcipt before it's done
+=======
+>>>>>>> 9b459567 (todo updates)
 - [ ] 
 
 # highly optional todos
