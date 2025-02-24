@@ -3,8 +3,8 @@
 ## transcription
 - [ ] transcribe on download
 - [ ] add setting to transcribe on download
-- [ ] add config / setting to display transcript in player
-- [ ] setting for the size of the transcript
+- [X] add config / setting to display transcript in player
+- [X] setting for the size of the transcript
 - [ ] clicking transcript syncs to that time
 
 ## search content

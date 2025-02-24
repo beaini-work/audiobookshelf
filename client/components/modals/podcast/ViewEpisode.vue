@@ -35,7 +35,7 @@
           </p>
         </div>
         <div class="flex-shrink-0 ml-4">
-          <ui-btn v-if="!isTranscribing && !isQueued && !hasTranscript" @click="transcribeEpisode" :loading="isTranscribing">
+          <ui-btn v-if="transcriptionsEnabled && !isTranscribing && !isQueued && !hasTranscript" @click="transcribeEpisode" :loading="isTranscribing">
             <span class="material-symbols mr-2">record_voice_over</span>
             Transcribe
           </ui-btn>
@@ -47,7 +47,7 @@
             <span class="material-symbols mr-2">queue</span>
             Queued for Transcription
           </ui-btn>
-          <ui-btn v-else disabled>
+          <ui-btn v-else-if="isTranscribing" disabled>
             <span class="material-symbols mr-2 animate-spin">refresh</span>
             Transcribing...
           </ui-btn>
@@ -116,6 +116,9 @@ export default {
     },
     hasTranscript() {
       return this.episode.transcript != null
+    },
+    transcriptionsEnabled() {
+      return this.$store.state.serverSettings?.transcriptionsEnabled ?? false
     }
   },
   methods: {

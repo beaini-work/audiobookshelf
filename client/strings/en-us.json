@@ -1100,5 +1100,8 @@
   "ToastTranscriptionStarted": "Transcription started",
   "ToastTranscriptionFailed": "Failed to start transcription",
   "LabelShowCaptions": "Show Captions",
-  "LabelHideCaptions": "Hide Captions"
+  "LabelHideCaptions": "Hide Captions",
+  "HeaderSettingsPodcasts": "Podcasts",
+  "LabelSettingsTranscriptionsEnabled": "Enable Transcriptions",
+  "LabelSettingsTranscriptionsEnabledHelp": "Enable or disable transcription functionality across the app. When disabled, no new transcriptions can be created."
 }

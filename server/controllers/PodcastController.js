@@ -553,6 +553,11 @@ class PodcastController {
       return res.sendStatus(403)
     }
 
+    if (!Database.serverSettings.transcriptionsEnabled) {
+      Logger.error(`[PodcastController] Transcriptions are disabled in server settings`)
+      return res.status(400).send('Transcriptions are disabled')
+    }
+
     const episode = req.libraryItem.media.podcastEpisodes.find((ep) => ep.id === req.params.episodeId)
     if (!episode) {
       Logger.error(`[PodcastController] Episode not found "${req.params.episodeId}"`)

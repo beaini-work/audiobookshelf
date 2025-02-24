@@ -28,6 +28,12 @@ class TranscriptionManager {
   }
 
   async startTranscription(libraryItem, episode) {
+    // Check if transcriptions are enabled in server settings
+    if (!Database.serverSettings.transcriptionsEnabled) {
+      Logger.warn('[TranscriptionManager] Transcriptions are disabled in server settings')
+      return
+    }
+
     if (this.currentTranscription) {
       // Add to queue if there's already a transcription running
       this.transcriptionQueue.push({
