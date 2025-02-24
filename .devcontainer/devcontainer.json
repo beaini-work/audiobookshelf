@@ -11,7 +11,12 @@
       "VARIANT": "20"
     }
   },
-  "mounts": ["source=abs-server-node_modules,target=${containerWorkspaceFolder}/node_modules,type=volume", "source=abs-client-node_modules,target=${containerWorkspaceFolder}/client/node_modules,type=volume", "source=${localEnv:HOME}/gen-lang-client-0627819805-f64d7ab88174.json,target=/workspaces/.config/gcloud/application_default_credentials.json,type=bind,readonly"],
+  "mounts": [
+    "source=abs-server-node_modules,target=${containerWorkspaceFolder}/node_modules,type=volume",
+    "source=abs-client-node_modules,target=${containerWorkspaceFolder}/client/node_modules,type=volume",
+    "source=${localEnv:HOME}/gen-lang-client-0627819805-f64d7ab88174.json,target=/workspaces/.config/gcloud/application_default_credentials.json,type=bind,readonly",
+    "source=abs-podcasts,target=/home/node/podcasts,type=volume"
+  ],
   "containerEnv": {
     "GOOGLE_APPLICATION_CREDENTIALS": "/workspaces/.config/gcloud/application_default_credentials.json"
   },

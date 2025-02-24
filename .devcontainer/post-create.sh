@@ -27,3 +27,10 @@ fi
 if [ -f client/package.json ]; then
     (cd client; npm ci; npm run generate)
 fi
+
+# Initialize podcasts directory if needed
+if [ ! "$(ls -A /home/node/podcasts)" ]; then
+    echo "Initializing podcasts directory..."
+    # Add any initialization commands here if needed
+    sudo chown -R node:node /home/node/podcasts
+fi
