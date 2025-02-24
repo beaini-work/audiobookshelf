@@ -55,6 +55,7 @@
 
 # highly optional todos
 
+- [ ] change chromadb credentials
 - [ ] notify front end when transcription is complete
 - [ ] clicking transcript syncs to that time
 - [ ] use tokenizer to split transcript into chunks for vectorization

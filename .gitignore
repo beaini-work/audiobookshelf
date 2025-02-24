@@ -1,5 +1,5 @@
 .env
-
+chroma_data/*
 **/node_modules/
 /config/
 /audiobooks/

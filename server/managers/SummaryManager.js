@@ -14,7 +14,11 @@ class SummaryManager {
     this.currentSummary = null
     this.summaryQueue = []
     this.chromaClient = new ChromaClient({
-      isPersistent: false // Configure ephemeral mode here
+      path: "http://10.10.2.248:8000", // Connect to host's Docker network
+      auth: {
+        provider: "basic",
+        credentials: "admin:admin"
+      }
     })
     this.collectionName = 'podcast_episodes'
     

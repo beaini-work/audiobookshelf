@@ -189,6 +189,8 @@ class Server {
         LibraryScanner.scanFilesChanged(pendingFileUpdates, pendingTask)
       })
     }
+
+    await this.checkChromaDBConnection()
   }
 
   /**
@@ -487,6 +489,23 @@ class Server {
     Logger.info('[Server] Closing HTTP Server')
     await new Promise((resolve) => this.server.close(resolve))
     Logger.info('[Server] HTTP Server Closed')
+  }
+
+  async checkChromaDBConnection() {
+    try {
+      const testClient = new ChromaClient({
+        path: 'http://10.10.2.248:8000',
+        auth: {
+          provider: 'basic',
+          credentials: 'admin:admin'
+        }
+      })
+      await testClient.heartbeat()
+      Logger.info('[Server] ChromaDB connection successful')
+    } catch (error) {
+      Logger.warn('[Server] WARNING: ChromaDB connection failed - Summary features will be disabled')
+      Logger.warn('[Server] Make sure ChromaDB is running: docker run -p 8000:8000 chromadb/chroma:latest')
+    }
   }
 }
 module.exports = Server

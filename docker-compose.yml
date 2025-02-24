@@ -25,3 +25,21 @@ services:
     # docker container as a specific user. You will need to change
     # the UID and GID to the correct values for your user.
     # user: 1000:1000
+
+  chroma:
+    image: chromadb/chroma:latest
+    volumes:
+      - ./chroma_data:/chroma/chroma
+    ports:
+      - "8000:8000"
+    environment:
+      - ALLOW_RESET=true
+      - CHROMA_SERVER_AUTH_CREDENTIALS=admin:admin  # Change these credentials
+      - CHROMA_SERVER_AUTH_PROVIDER=basic
+      - CHROMA_SERVER_AUTH_TOKEN_TRANSPORT_HEADER=AUTHORIZATION
+    networks:
+      - chroma_net
+
+networks:
+  chroma_net:
+    driver: bridge
