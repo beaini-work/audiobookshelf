@@ -22,12 +22,25 @@ class SummaryManager {
     })
     this.collectionName = 'podcast_episodes'
     
+    // Validate OpenAI API key
+    if (!process.env.OPENAI_API_KEY) {
+      Logger.error('[SummaryManager] OpenAI API key not found. Please set the OPENAI_API_KEY environment variable.')
+      this.llm = null
+      return
+    }
+    
     // Initialize LangChain components
-    this.llm = new ChatOpenAI({
-      modelName: "gpt-4o-mini",
-      temperature: 0.3,
-      apiKey: process.env.OPENAI_API_KEY, 
-    })
+    try {
+      this.llm = new ChatOpenAI({
+        modelName: "gpt-4o-mini",
+        temperature: 0.3,
+        apiKey: process.env.OPENAI_API_KEY, 
+      })
+    } catch (error) {
+      Logger.error('[SummaryManager] Failed to initialize OpenAI client:', error)
+      this.llm = null
+      return
+    }
 
     this.summaryTemplate = `
 You are an expert in summarizing podcast content.
@@ -348,6 +361,11 @@ REFINED SUMMARY:
 
   async generateSummary(transcript) {
     try {
+      // Check if LLM is properly initialized
+      if (!this.llm) {
+        throw new Error('OpenAI client not initialized. Please check your API key configuration.')
+      }
+
       // Convert transcript chunks to LangChain documents
       const docs = this.processTranscriptToDocuments(transcript)
 
