@@ -11,6 +11,7 @@ const date = require('../libs/dateAndTime')
 
 const CacheManager = require('../managers/CacheManager')
 const RssFeedManager = require('../managers/RssFeedManager')
+const SummaryManager = require('../managers/SummaryManager')
 
 const LibraryController = require('../controllers/LibraryController')
 const UserController = require('../controllers/UserController')
@@ -55,6 +56,8 @@ class ApiRouter {
     /** @type {import('../managers/EmailManager')} */
     this.emailManager = Server.emailManager
     this.apiCacheManager = Server.apiCacheManager
+    /** @type {import('../managers/SummaryManager')} */
+    this.summaryManager = Server.summaryManager
 
     this.router = express()
     this.router.disable('x-powered-by')
@@ -253,8 +256,12 @@ class ApiRouter {
     this.router.get('/podcasts/:id/episode/:episodeId', PodcastController.middleware.bind(this), PodcastController.getEpisode.bind(this))
     this.router.patch('/podcasts/:id/episode/:episodeId', PodcastController.middleware.bind(this), PodcastController.updateEpisode.bind(this))
     this.router.delete('/podcasts/:id/episode/:episodeId', PodcastController.middleware.bind(this), PodcastController.removeEpisode.bind(this))
-    this.router.post('/podcasts/:id/episode/:episodeId/transcribe', PodcastController.middleware.bind(this), PodcastController.transcribeEpisode.bind(this))
+    this.router.post('/podcasts/:id/episode/:episodeId/summary', PodcastController.middleware.bind(this), PodcastController.startSummaryGeneration.bind(this))
     this.router.get('/podcasts/:id/episode/:episodeId/transcription-status', PodcastController.middleware.bind(this), PodcastController.getTranscriptionStatus.bind(this))
+    this.router.get('/podcasts/:id/episode/:episodeId/summary/status', PodcastController.middleware.bind(this), PodcastController.getSummaryStatus.bind(this))
+    this.router.get('/podcasts/:id/episode/:episodeId/summary', PodcastController.middleware.bind(this), PodcastController.getSummary.bind(this))
+    this.router.delete('/podcasts/:id/episode/:episodeId/summary', PodcastController.middleware.bind(this), PodcastController.deleteSummary.bind(this))
+
     //
     // Notification Routes (Admin and up)
     //
@@ -341,6 +348,118 @@ class ApiRouter {
     this.router.post('/watcher/update', MiscController.updateWatchedPath.bind(this))
     this.router.get('/stats/year/:year', MiscController.getAdminStatsForYear.bind(this))
     this.router.get('/logger-data', MiscController.getLoggerData.bind(this))
+
+    // Summary Routes
+    this.router.get('/podcasts/:podcastId/episodes/:episodeId/summary', this.auth.ifAuthNeeded, async (req, res) => {
+      try {
+        const libraryItem = await Database.libraryItemModel.getExpandedById(req.params.podcastId)
+        if (!libraryItem) {
+          return res.status(404).send({ error: 'Podcast not found' })
+        }
+
+        const episode = libraryItem.media.podcastEpisodes.find(ep => ep.id === req.params.episodeId)
+        if (!episode) {
+          return res.status(404).send({ error: 'Episode not found' })
+        }
+
+        const summary = await Database.PodcastEpisodeSummary.findOne({
+          where: { episodeId: episode.id }
+        })
+
+        if (!summary) {
+          return res.status(404).send({ error: 'Summary not found' })
+        }
+
+        res.send({
+          status: summary.status,
+          summary: summary.summary,
+          error: summary.error,
+          createdAt: summary.createdAt,
+          updatedAt: summary.updatedAt
+        })
+      } catch (error) {
+        Logger.error('[ApiRouter] Error retrieving summary:', error)
+        res.status(500).send({ error: 'Failed to retrieve summary' })
+      }
+    })
+
+    this.router.get('/podcasts/:podcastId/episodes/:episodeId/summary/status', this.auth.ifAuthNeeded, async (req, res) => {
+      try {
+        const libraryItem = await Database.libraryItemModel.getExpandedById(req.params.podcastId)
+        if (!libraryItem) {
+          return res.status(404).send({ error: 'Podcast not found' })
+        }
+
+        const episode = libraryItem.media.podcastEpisodes.find(ep => ep.id === req.params.episodeId)
+        if (!episode) {
+          return res.status(404).send({ error: 'Episode not found' })
+        }
+
+        const queueDetails = this.summaryManager.getQueueDetails(libraryItem.libraryId)
+        const isQueued = queueDetails.queue.some(item => item.episodeId === episode.id)
+        const isCurrentlyProcessing = queueDetails.currentSummary?.episodeId === episode.id
+
+        const summary = await Database.PodcastEpisodeSummary.findOne({
+          where: { episodeId: episode.id }
+        })
+
+        res.send({
+          status: summary?.status || 'not_started',
+          isQueued,
+          isCurrentlyProcessing,
+          queuePosition: isQueued ? 
+            queueDetails.queue.findIndex(item => item.episodeId === episode.id) + 1 : 
+            null,
+          error: summary?.error,
+          updatedAt: summary?.updatedAt
+        })
+      } catch (error) {
+        Logger.error('[ApiRouter] Error checking summary status:', error)
+        res.status(500).send({ error: 'Failed to check summary status' })
+      }
+    })
+
+    this.router.delete('/podcasts/:podcastId/episodes/:episodeId/summary', this.auth.ifAuthNeeded, async (req, res) => {
+      try {
+        const libraryItem = await Database.libraryItemModel.getExpandedById(req.params.podcastId)
+        if (!libraryItem) {
+          return res.status(404).send({ error: 'Podcast not found' })
+        }
+
+        const episode = libraryItem.media.podcastEpisodes.find(ep => ep.id === req.params.episodeId)
+        if (!episode) {
+          return res.status(404).send({ error: 'Episode not found' })
+        }
+
+        const summary = await Database.PodcastEpisodeSummary.findOne({
+          where: { episodeId: episode.id }
+        })
+
+        if (!summary) {
+          return res.status(404).send({ error: 'Summary not found' })
+        }
+
+        // Delete from ChromaDB if vectorDbId exists
+        if (summary.vectorDbId) {
+          const collection = await this.summaryManager.initializeChromaDB()
+          const chunkIds = summary.vectorDbId.split(',')
+          await collection.delete({
+            ids: chunkIds
+          })
+        }
+
+        // Delete from database
+        await summary.destroy()
+
+        res.send({
+          status: 'deleted',
+          message: 'Summary deleted successfully'
+        })
+      } catch (error) {
+        Logger.error('[ApiRouter] Error deleting summary:', error)
+        res.status(500).send({ error: 'Failed to delete summary' })
+      }
+    })
   }
 
   //

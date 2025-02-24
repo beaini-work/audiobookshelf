@@ -16,8 +16,88 @@
         </div>
       </div>
       <p dir="auto" class="text-lg font-semibold mb-6">{{ title }}</p>
-      <div v-if="description" dir="auto" class="default-style less-spacing" v-html="description" />
-      <p v-else class="mb-2">{{ $strings.MessageNoDescription }}</p>
+
+      <!-- Tab Navigation -->
+      <div class="flex border-b border-white/10 mb-4">
+        <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id" :class="['px-4 py-2 -mb-px', activeTab === tab.id ? 'border-b-2 border-primary text-primary' : 'text-gray-300']">
+          <div class="flex items-center">
+            <span class="material-symbols mr-2">{{ tab.icon }}</span>
+            {{ tab.label }}
+          </div>
+        </button>
+      </div>
+
+      <!-- Description Tab -->
+      <div v-if="activeTab === 'description'" class="tab-content">
+        <div v-if="description" dir="auto" class="default-style less-spacing" v-html="description" />
+        <p v-else class="mb-2">{{ $strings.MessageNoDescription }}</p>
+      </div>
+
+      <!-- Transcript Tab -->
+      <div v-if="activeTab === 'transcript'" class="tab-content">
+        <div v-if="hasTranscript" class="flex justify-between items-center mb-4">
+          <p class="text-sm">{{ $strings.LabelTranscript }}</p>
+          <ui-btn @click="viewTranscript" variant="secondary">
+            <span class="material-symbols mr-2">description</span>
+            View Full Transcript
+          </ui-btn>
+        </div>
+        <div v-else class="flex justify-between items-center mb-4">
+          <p class="text-sm">{{ $strings.LabelTranscript }}</p>
+          <ui-btn v-if="transcriptionsEnabled && !isTranscribing && !isQueued" @click="transcribeEpisode" :loading="isTranscribing">
+            <span class="material-symbols mr-2">record_voice_over</span>
+            Transcribe
+          </ui-btn>
+          <ui-btn v-else-if="isQueued" disabled>
+            <span class="material-symbols mr-2">queue</span>
+            Queued for Transcription
+          </ui-btn>
+          <ui-btn v-else-if="isTranscribing" disabled>
+            <span class="material-symbols mr-2 animate-spin">refresh</span>
+            Transcribing...
+          </ui-btn>
+        </div>
+      </div>
+
+      <!-- Summary Tab -->
+      <div v-if="activeTab === 'summary'" class="tab-content">
+        <div class="flex justify-between items-center mb-4">
+          <p class="text-sm">{{ $strings.LabelSummary }}</p>
+          <div class="flex gap-2">
+            <ui-btn v-if="!hasSummary && !isSummarizing && !isSummaryQueued && hasTranscript" @click="generateSummary" :loading="isSummarizing">
+              <span class="material-symbols mr-2">summarize</span>
+              Generate Summary
+            </ui-btn>
+            <ui-btn v-if="hasSummary" @click="deleteSummary" variant="danger" :loading="isDeletingSummary">
+              <span class="material-symbols mr-2">delete</span>
+              Delete Summary
+            </ui-btn>
+          </div>
+        </div>
+
+        <div v-if="hasSummary" class="prose prose-invert max-w-none">
+          {{ summary }}
+        </div>
+        <div v-else-if="isSummaryQueued" class="text-center py-8">
+          <span class="material-symbols text-4xl mb-2">queue</span>
+          <p>Queued for Summary Generation</p>
+          <p class="text-xs text-gray-400 mt-2">Position in queue: {{ summaryQueuePosition }}</p>
+        </div>
+        <div v-else-if="isSummarizing" class="text-center py-8">
+          <span class="material-symbols text-4xl mb-2 animate-spin">refresh</span>
+          <p>Generating Summary...</p>
+        </div>
+        <div v-else-if="!hasTranscript" class="text-center py-8">
+          <span class="material-symbols text-4xl mb-2">record_voice_over</span>
+          <p>Transcript Required</p>
+          <p class="text-xs text-gray-400 mt-2">Generate a transcript first to create a summary</p>
+        </div>
+        <div v-else class="text-center py-8">
+          <span class="material-symbols text-4xl mb-2">summarize</span>
+          <p>No Summary Available</p>
+          <p class="text-xs text-gray-400 mt-2">Click "Generate Summary" to create one</p>
+        </div>
+      </div>
 
       <div class="w-full h-px bg-white/5 my-4" />
 
@@ -34,24 +114,6 @@
             {{ audioFileSize }}
           </p>
         </div>
-        <div class="flex-shrink-0 ml-4">
-          <ui-btn v-if="transcriptionsEnabled && !isTranscribing && !isQueued && !hasTranscript" @click="transcribeEpisode" :loading="isTranscribing">
-            <span class="material-symbols mr-2">record_voice_over</span>
-            Transcribe
-          </ui-btn>
-          <ui-btn v-else-if="hasTranscript" @click="viewTranscript" variant="secondary">
-            <span class="material-symbols mr-2">description</span>
-            View Transcript
-          </ui-btn>
-          <ui-btn v-else-if="isQueued" disabled>
-            <span class="material-symbols mr-2">queue</span>
-            Queued for Transcription
-          </ui-btn>
-          <ui-btn v-else-if="isTranscribing" disabled>
-            <span class="material-symbols mr-2 animate-spin">refresh</span>
-            Transcribing...
-          </ui-btn>
-        </div>
       </div>
     </div>
   </modals-modal>
@@ -64,7 +126,19 @@ export default {
       processing: false,
       isTranscribing: false,
       isQueued: false,
-      transcriptionQueueInterval: null
+      transcriptionQueueInterval: null,
+      summaryCheckInterval: null,
+      activeTab: 'description',
+      isSummarizing: false,
+      isSummaryQueued: false,
+      summaryQueuePosition: 0,
+      isDeletingSummary: false,
+      summary: null,
+      tabs: [
+        { id: 'description', label: 'Description', icon: 'description' },
+        { id: 'transcript', label: 'Transcript', icon: 'record_voice_over' },
+        { id: 'summary', label: 'Summary', icon: 'summarize' }
+      ]
     }
   },
   watch: {
@@ -73,8 +147,12 @@ export default {
       handler(newVal) {
         if (newVal && this.episodeId) {
           this.checkTranscriptionStatus()
+          this.checkSummaryStatus()
           if (!this.transcriptionQueueInterval) {
             this.transcriptionQueueInterval = setInterval(this.checkTranscriptionStatus, 5000)
+          }
+          if (!this.summaryCheckInterval) {
+            this.summaryCheckInterval = setInterval(this.checkSummaryStatus, 5000)
           }
         }
       }
@@ -121,7 +199,6 @@ export default {
     },
     audioFileSize() {
       const size = this.episode.audioFile?.metadata?.size || 0
-
       return this.$bytesPretty(size)
     },
     bookCoverAspectRatio() {
@@ -132,6 +209,9 @@ export default {
     },
     transcriptionsEnabled() {
       return this.$store.state.serverSettings?.transcriptionsEnabled ?? false
+    },
+    hasSummary() {
+      return this.summary !== null
     }
   },
   methods: {
@@ -142,6 +222,57 @@ export default {
         this.isQueued = response.queued.some((ep) => ep.episodeId === this.episodeId)
       } catch (error) {
         console.error('Failed to check transcription status', error)
+      }
+    },
+    async checkSummaryStatus() {
+      try {
+        if (!this.libraryItem || !this.episodeId) return
+        const response = await this.$axios.$get(`/api/podcasts/${this.libraryItem.id}/episode/${this.episodeId}/summary/status`)
+
+        this.isSummaryQueued = response.isQueued
+        this.isSummarizing = response.isCurrentlyProcessing
+        this.summaryQueuePosition = response.queuePosition
+
+        if (response.status === 'completed') {
+          await this.fetchSummary()
+        }
+      } catch (error) {
+        console.error('Failed to check summary status', error)
+      }
+    },
+    async fetchSummary() {
+      try {
+        const response = await this.$axios.$get(`/api/podcasts/${this.libraryItem.id}/episode/${this.episodeId}/summary`)
+        this.summary = response.summary
+      } catch (error) {
+        console.error('Failed to fetch summary', error)
+        this.summary = null
+      }
+    },
+    async generateSummary() {
+      try {
+        this.isSummarizing = true
+        await this.$axios.$post(`/api/podcasts/${this.libraryItem.id}/episode/${this.episodeId}/summary`)
+        this.$toast.success('Summary generation started')
+        await this.checkSummaryStatus()
+      } catch (error) {
+        console.error('Failed to start summary generation', error)
+        this.$toast.error(error.response?.data?.error || 'Failed to start summary generation')
+      } finally {
+        this.isSummarizing = false
+      }
+    },
+    async deleteSummary() {
+      try {
+        this.isDeletingSummary = true
+        await this.$axios.$delete(`/api/podcasts/${this.libraryItem.id}/episode/${this.episodeId}/summary`)
+        this.$toast.success('Summary deleted')
+        this.summary = null
+      } catch (error) {
+        console.error('Failed to delete summary', error)
+        this.$toast.error(error.response?.data?.error || 'Failed to delete summary')
+      } finally {
+        this.isDeletingSummary = false
       }
     },
     async transcribeEpisode() {
@@ -166,12 +297,23 @@ export default {
     }
   },
   mounted() {
-    // Remove the direct transcription status check from mounted
+    if (this.libraryItem && this.episodeId) {
+      this.checkSummaryStatus()
+    }
   },
   beforeDestroy() {
     if (this.transcriptionQueueInterval) {
       clearInterval(this.transcriptionQueueInterval)
     }
+    if (this.summaryCheckInterval) {
+      clearInterval(this.summaryCheckInterval)
+    }
   }
 }
 </script>
+
+<style scoped>
+.tab-content {
+  min-height: 200px;
+}
+</style>

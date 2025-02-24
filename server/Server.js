@@ -37,6 +37,7 @@ const ApiCacheManager = require('./managers/ApiCacheManager')
 const BinaryManager = require('./managers/BinaryManager')
 const ShareManager = require('./managers/ShareManager')
 const LibraryScanner = require('./scanner/LibraryScanner')
+const SummaryManager = require('./managers/SummaryManager')
 
 //Import the main Passport and Express-Session library
 const passport = require('passport')
@@ -110,6 +111,7 @@ class Server {
     this.cronManager = new CronManager(this.podcastManager, this.playbackSessionManager)
     this.apiCacheManager = new ApiCacheManager()
     this.binaryManager = new BinaryManager()
+    this.summaryManager = new SummaryManager()
 
     // Routers
     this.apiRouter = new ApiRouter(this)

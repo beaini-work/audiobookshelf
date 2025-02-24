@@ -3,6 +3,7 @@ const { Request, Response, NextFunction } = require('express')
 const Logger = require('../Logger')
 const SocketAuthority = require('../SocketAuthority')
 const Database = require('../Database')
+const SummaryManager = require('../managers/SummaryManager')
 
 const fs = require('../libs/fsExtra')
 
@@ -27,6 +28,16 @@ const TranscriptionManager = require('../managers/TranscriptionManager')
  */
 
 class PodcastController {
+  constructor() {
+    this.summaryManager = new SummaryManager()
+
+    // Bind methods to this instance
+    this.startSummaryGeneration = this.startSummaryGeneration.bind(this)
+    this.getSummaryStatus = this.getSummaryStatus.bind(this)
+    this.getSummary = this.getSummary.bind(this)
+    this.deleteSummary = this.deleteSummary.bind(this)
+  }
+
   /**
    * POST /api/podcasts
    * Create podcast
@@ -606,5 +617,137 @@ class PodcastController {
       }))
     })
   }
+
+  /**
+   * POST /api/podcasts/:id/episode/:episodeId/summary
+   * Start summary generation for an episode
+   * 
+   * @param {RequestWithLibraryItem} req
+   * @param {Response} res
+   */
+  async startSummaryGeneration(req, res) {
+    try {
+      const episode = req.libraryItem.media.podcastEpisodes.find(ep => ep.id === req.params.episodeId)
+      if (!episode) {
+        return res.status(404).send({ error: 'Episode not found' })
+      }
+
+      if (!episode.transcript) {
+        return res.status(400).send({ error: 'Episode transcript is required for summary generation' })
+      }
+
+      await this.summaryManager.startSummaryGeneration(req.libraryItem, episode)
+      res.sendStatus(200)
+    } catch (error) {
+      Logger.error('[PodcastController] Failed to start summary generation', error)
+      res.status(500).send({ error: 'Failed to start summary generation' })
+    }
+  }
+
+  /**
+   * GET /api/podcasts/:podcastId/episodes/:episodeId/summary/status
+   * Get the status of summary generation for an episode
+   * 
+   * @param {RequestWithLibraryItem} req
+   * @param {Response} res
+   */
+  async getSummaryStatus(req, res) {
+    try {
+      const episode = this.libraryItem.media.podcastEpisodes.find(ep => ep.id === req.params.episodeId)
+      if (!episode) {
+        return res.status(404).send({ error: 'Episode not found' })
+      }
+
+      const queueDetails = this.summaryManager.getQueueDetails(this.libraryItem.libraryId)
+      const isQueued = queueDetails.queue.some(item => 
+        item.libraryItemId === this.libraryItem.id && item.episodeId === episode.id
+      )
+      const isCurrentlyProcessing = queueDetails.currentSummary && 
+        queueDetails.currentSummary.libraryItemId === this.libraryItem.id && 
+        queueDetails.currentSummary.episodeId === episode.id
+
+      const queuePosition = isQueued ? 
+        queueDetails.queue.findIndex(item => 
+          item.libraryItemId === this.libraryItem.id && item.episodeId === episode.id
+        ) + 1 : 0
+
+      const summary = await Database.PodcastEpisodeSummary.findOne({
+        where: { episodeId: episode.id }
+      })
+
+      res.json({
+        isQueued,
+        isCurrentlyProcessing,
+        queuePosition,
+        status: summary ? summary.status : 'not_found'
+      })
+    } catch (error) {
+      Logger.error('[PodcastController] Failed to get summary status', error)
+      res.status(500).send({ error: 'Failed to get summary status' })
+    }
+  }
+
+  /**
+   * GET /api/podcasts/:podcastId/episodes/:episodeId/summary
+   * Get the generated summary for an episode
+   * 
+   * @param {RequestWithLibraryItem} req
+   * @param {Response} res
+   */
+  async getSummary(req, res) {
+    try {
+      const episode = this.libraryItem.media.podcastEpisodes.find(ep => ep.id === req.params.episodeId)
+      if (!episode) {
+        return res.status(404).send({ error: 'Episode not found' })
+      }
+
+      const summary = await Database.PodcastEpisodeSummary.findOne({
+        where: { episodeId: episode.id }
+      })
+
+      if (!summary) {
+        return res.status(404).send({ error: 'Summary not found' })
+      }
+
+      res.json({
+        status: summary.status,
+        summary: summary.summary,
+        error: summary.error,
+        createdAt: summary.createdAt,
+        updatedAt: summary.updatedAt
+      })
+    } catch (error) {
+      Logger.error('[PodcastController] Failed to get summary', error)
+      res.status(500).send({ error: 'Failed to get summary' })
+    }
+  }
+
+  /**
+   * DELETE /api/podcasts/:podcastId/episodes/:episodeId/summary
+   * Delete the generated summary for an episode
+   * 
+   * @param {RequestWithLibraryItem} req
+   * @param {Response} res
+   */
+  async deleteSummary(req, res) {
+    try {
+      const episode = this.libraryItem.media.podcastEpisodes.find(ep => ep.id === req.params.episodeId)
+      if (!episode) {
+        return res.status(404).send({ error: 'Episode not found' })
+      }
+
+      await Database.PodcastEpisodeSummary.destroy({
+        where: { episodeId: episode.id }
+      })
+
+      res.sendStatus(200)
+    } catch (error) {
+      Logger.error('[PodcastController] Failed to delete summary', error)
+      res.status(500).send({ error: 'Failed to delete summary' })
+    }
+  }
 }
-module.exports = new PodcastController()
+
+// Export a new instance of the controller
+const controller = new PodcastController()
+module.exports = controller

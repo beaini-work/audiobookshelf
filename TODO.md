@@ -19,7 +19,7 @@
 
 ## view summary
 
-- [ ] summarize
+- [ ] Button to transcribe and summarize
 
 ## finissage
 
@@ -57,3 +57,5 @@
 
 - [ ] notify front end when transcription is complete
 - [ ] clicking transcript syncs to that time
+- [ ] use tokenizer to split transcript into chunks for vectorization
+- [ ] Add progress tracking for the summary generation process?
