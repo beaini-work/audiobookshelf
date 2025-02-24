@@ -75,8 +75,8 @@
           </div>
         </div>
 
-        <div v-if="hasSummary" class="prose prose-invert max-w-none">
-          {{ summary }}
+        <div v-if="hasSummary" class="prose prose-invert max-w-none summary-content">
+          <div v-html="formattedSummary"></div>
         </div>
         <div v-else-if="isSummaryQueued" class="text-center py-8">
           <span class="material-symbols text-4xl mb-2">queue</span>
@@ -120,6 +120,8 @@
 </template>
 
 <script>
+import { marked } from '@/static/libs/marked/index.js'
+
 export default {
   data() {
     return {
@@ -212,6 +214,22 @@ export default {
     },
     hasSummary() {
       return this.summary !== null
+    },
+    formattedSummary() {
+      try {
+        if (!this.summary) return ''
+        const parsed = marked.parse(this.summary, {
+          gfm: true,
+          breaks: true,
+          // Disable potentially unsafe features
+          tables: false,
+          code: false
+        })
+        return parsed || 'No summary available'
+      } catch (error) {
+        console.error('Failed to parse summary markdown', error)
+        return this.summary // Fallback to raw text
+      }
     }
   },
   methods: {
@@ -315,5 +333,62 @@ export default {
 <style scoped>
 .tab-content {
   min-height: 200px;
+}
+
+/* Markdown styles */
+.summary-content ::v-deep {
+  @apply text-gray-100;
+}
+
+.summary-content ::v-deep h1,
+.summary-content ::v-deep h2,
+.summary-content ::v-deep h3,
+.summary-content ::v-deep h4,
+.summary-content ::v-deep h5,
+.summary-content ::v-deep h6 {
+  @apply font-bold mb-2 mt-4;
+}
+
+.summary-content ::v-deep h1 {
+  @apply text-2xl;
+}
+.summary-content ::v-deep h2 {
+  @apply text-xl;
+}
+.summary-content ::v-deep h3 {
+  @apply text-lg;
+}
+
+.summary-content ::v-deep p {
+  @apply mb-4;
+}
+
+.summary-content ::v-deep ul,
+.summary-content ::v-deep ol {
+  @apply mb-4 ml-4;
+}
+
+.summary-content ::v-deep ul {
+  @apply list-disc;
+}
+
+.summary-content ::v-deep ol {
+  @apply list-decimal;
+}
+
+.summary-content ::v-deep li {
+  @apply mb-1;
+}
+
+.summary-content ::v-deep strong {
+  @apply font-bold;
+}
+
+.summary-content ::v-deep em {
+  @apply italic;
+}
+
+.summary-content ::v-deep a {
+  @apply text-primary hover:underline;
 }
 </style>
