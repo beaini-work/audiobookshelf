@@ -118,33 +118,50 @@ Response:`);
       });
 
       // Transform the response to match our API format with enhanced metadata
+      const sourcesWithMetadata = response.relevantSegments.map(segment => {
+        // Find the corresponding result to get metadata
+        const matchingResult = results.find(r => 
+          r.metadata.episodeTitle === segment.episodeTitle && 
+          r.metadata.podcastTitle === segment.podcastTitle);
+        
+        // Format timestamp properly or handle invalid formats
+        let formattedTimestamp = segment.timestamp;
+        if (!formattedTimestamp || formattedTimestamp === '[NaN:NaN]') {
+          formattedTimestamp = matchingResult ? 
+            this.formatTimestamp(matchingResult.metadata.startTime) : 
+            '[00:00]';
+        }
+        
+        return {
+          episodeId: matchingResult?.metadata.episodeId,
+          podcastId: matchingResult?.metadata.podcastId,
+          timestamp: formattedTimestamp,
+          // Add these new fields for client-side use
+          podcastTitle: matchingResult?.metadata.podcastTitle || segment.podcastTitle,
+          episodeTitle: matchingResult?.metadata.episodeTitle || segment.episodeTitle,
+          // Include the transcript content that contains the answer
+          transcriptContent: matchingResult ? matchingResult.content : segment.context || ''
+        };
+      });
+
+      // Filter out duplicate sources based on episodeId and timestamp
+      const uniqueSources = [];
+      const seenKeys = new Set();
+      
+      for (const source of sourcesWithMetadata) {
+        // Create a unique key for each source based on episodeId and timestamp
+        const key = `${source.episodeId}-${source.timestamp}`;
+        
+        // Only add the source if we haven't seen this combination before
+        if (!seenKeys.has(key)) {
+          seenKeys.add(key);
+          uniqueSources.push(source);
+        }
+      }
+
       return {
         answer: response.answer,
-        sources: response.relevantSegments.map(segment => {
-          // Find the corresponding result to get metadata
-          const matchingResult = results.find(r => 
-            r.metadata.episodeTitle === segment.episodeTitle && 
-            r.metadata.podcastTitle === segment.podcastTitle);
-          
-          // Format timestamp properly or handle invalid formats
-          let formattedTimestamp = segment.timestamp;
-          if (!formattedTimestamp || formattedTimestamp === '[NaN:NaN]') {
-            formattedTimestamp = matchingResult ? 
-              this.formatTimestamp(matchingResult.metadata.startTime) : 
-              '[00:00]';
-          }
-          
-          return {
-            episodeId: matchingResult?.metadata.episodeId,
-            podcastId: matchingResult?.metadata.podcastId,
-            timestamp: formattedTimestamp,
-            // Add these new fields for client-side use
-            podcastTitle: matchingResult?.metadata.podcastTitle || segment.podcastTitle,
-            episodeTitle: matchingResult?.metadata.episodeTitle || segment.episodeTitle,
-            // Include the transcript content that contains the answer
-            transcriptContent: matchingResult ? matchingResult.content : segment.context || ''
-          };
-        })
+        sources: uniqueSources
       };
 
     } catch (error) {
