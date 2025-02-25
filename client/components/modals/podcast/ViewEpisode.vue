@@ -14,6 +14,12 @@
           <p class="text-base mb-1">{{ podcastTitle }}</p>
           <p class="text-xs text-gray-300">{{ podcastAuthor }}</p>
         </div>
+        <div class="flex items-center">
+          <button @click="openVoiceChat" class="px-3 py-1 rounded-md bg-primary text-white hover:bg-primary-600 transition-colors flex items-center">
+            <span class="material-symbols mr-1">record_voice_over</span>
+            Voice Chat
+          </button>
+        </div>
       </div>
       <p dir="auto" class="text-lg font-semibold mb-6">{{ title }}</p>
 
@@ -243,6 +249,9 @@ export default {
     }
   },
   methods: {
+    openVoiceChat() {
+      this.$store.commit('globals/setShowVoiceChatModal', true)
+    },
     async checkTranscriptionStatus() {
       try {
         if (!this.libraryItem || !this.episodeId) return

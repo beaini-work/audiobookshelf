@@ -22,6 +22,7 @@
     <modals-rssfeed-open-close-modal />
     <modals-raw-cover-preview-modal />
     <modals-share-modal />
+    <modals-voice-chat-modal />
     <prompt-confirm />
     <readers-reader />
   </div>

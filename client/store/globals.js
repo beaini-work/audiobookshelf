@@ -13,6 +13,7 @@ export const state = () => ({
   showShareModal: false,
   showConfirmPrompt: false,
   showRawCoverPreviewModal: false,
+  showVoiceChatModal: false,
   confirmPromptOptions: null,
   showEditAuthorModal: false,
   rssFeedEntity: null,
@@ -232,5 +233,8 @@ export const mutations = {
       state.showTranscriptModal = true
       state.transcriptModalData = data
     }
+  },
+  setShowVoiceChatModal(state, val) {
+    state.showVoiceChatModal = val
   }
 }

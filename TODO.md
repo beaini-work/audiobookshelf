@@ -73,6 +73,7 @@
 
 # highly optional todos
 
+- [ ] rename project to something e.g. audiobrain
 - [ ] use openai for transcription
 - [ ] display suggested questions to ask in the knowledge base
 - [ ] change chromadb credentials
