@@ -35,6 +35,8 @@ const CustomMetadataProviderController = require('../controllers/CustomMetadataP
 const MiscController = require('../controllers/MiscController')
 const ShareController = require('../controllers/ShareController')
 
+const openaiRoutes = require('../routes/openaiRoutes')
+
 const { getTitleIgnorePrefix } = require('../utils/index')
 
 class ApiRouter {
@@ -425,6 +427,8 @@ class ApiRouter {
         res.status(500).send({ error: 'Failed to delete summary' })
       }
     })
+
+    this.router.use('/openai', openaiRoutes)
   }
 
   //
