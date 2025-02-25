@@ -1,37 +1,27 @@
 <template>
-  <div class="knowledge-page flex flex-col h-screen">
+  <div class="audiomind-page flex flex-col h-screen">
     <!-- Fixed search header -->
-    <div class="bg-primary p-8 md:px-12 w-full flex-shrink-0">
+    <div class="bg-primary p-4 md:px-8 w-full flex-shrink-0">
       <div class="flex flex-col max-w-5xl mx-auto">
-        <h1 class="text-2xl md:text-3xl font-semibold mb-4">Knowledge Base</h1>
-        <p class="text-gray-300 mb-6">Search across your podcast transcripts with natural language questions.</p>
+        <h1 class="text-xl md:text-2xl font-semibold mb-2">AudioMind</h1>
+        <p class="text-gray-300 text-sm mb-3">Search your audio content with natural language questions and discover insights instantly.</p>
 
         <!-- Search interface -->
         <div class="w-full">
           <!-- Enhanced search input with better contrast and accessibility -->
           <div class="relative w-full search-container">
-            <input v-model="searchQuery" type="text" class="w-full px-5 py-4 pr-16 rounded-lg border border-gray-600 bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 text-white text-base transition-all duration-200" placeholder="What would you like to know from your podcasts?" @keyup.enter="performSearch" aria-label="Search podcasts" />
+            <input v-model="searchQuery" type="text" class="w-full px-4 py-3 pr-14 rounded-lg border border-gray-600 bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 text-white text-base transition-all duration-200" placeholder="Ask anything about your audio content..." @keyup.enter="performSearch" aria-label="Search audio content" />
 
             <!-- Improved search button with better visual design and feedback -->
             <button
-              class="search-button absolute right-3 top-1/2 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-500 active:bg-blue-400 text-white rounded-full w-11 h-11 flex items-center justify-center shadow-md transition-all duration-200 focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50"
+              class="search-button absolute right-3 top-1/2 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-500 active:bg-blue-400 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-md transition-all duration-200 focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50"
               @click="performSearch"
               :class="{ 'animate-pulse': isSearching }"
               :disabled="isSearching"
-              aria-label="Search podcasts"
+              aria-label="Search audio content"
             >
-              <span class="material-symbols" style="font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24; font-size: 24px">search</span>
+              <span class="material-symbols" style="font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24; font-size: 22px">search</span>
             </button>
-          </div>
-
-          <!-- Search examples (more prominent) -->
-          <div class="mt-8">
-            <p class="text-gray-300 text-sm font-medium mb-3">Try asking:</p>
-            <div class="flex flex-wrap gap-3">
-              <button v-for="(example, i) in searchExamples" :key="i" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-base text-gray-200 transition-colors duration-200 hover:shadow-md" @click="useSearchExample(example)" :aria-label="`Search for: ${example}`">
-                {{ example }}
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -60,8 +50,8 @@
         <!-- Empty state after search -->
         <div v-else-if="searchPerformed && !searchResults" class="text-center py-12">
           <div class="material-symbols text-6xl text-gray-600 mb-4">search_off</div>
-          <h3 class="text-xl font-semibold mb-2">No results found</h3>
-          <p class="text-gray-400">Try a different query or select more libraries to search in.</p>
+          <h3 class="text-xl font-semibold mb-2">No insights found</h3>
+          <p class="text-gray-400">Try rephrasing your question or expanding your search scope.</p>
         </div>
 
         <!-- Error state -->
@@ -137,7 +127,6 @@ export default {
       searchPerformed: false,
       searchError: null,
       selectedLibraryIds: [],
-      searchExamples: ['What are the key insights about AI safety?', 'Summarize the discussion about climate change', 'What did they say about meditation benefits?'],
       expandedTranscripts: {}, // Track which transcripts are expanded by their index
       searchPhase: 0, // Track the current phase of searching
       searchPhaseInterval: null // Interval for updating search phases
@@ -229,10 +218,7 @@ export default {
         this.searchPhaseInterval = null
       }
     },
-    useSearchExample(example) {
-      this.searchQuery = example
-      this.performSearch()
-    },
+
     getPodcastTitle(podcastId) {
       // Try both namespaced and non-namespaced paths to find the podcast
       // First check if we can access it directly as a library item
@@ -367,15 +353,15 @@ export default {
 </script>
 
 <style>
-.knowledge-page {
+.audiomind-page {
   /* Push content up to cover the toolbar */
   margin-top: -10px;
   position: relative;
   z-index: 50; /* Higher than the toolbar z-index of 40 */
 }
 
-/* Hide the toolbar specifically for the knowledge page */
-.knowledge-page ~ div #toolbar {
+/* Hide the toolbar specifically for the audiomind page */
+.audiomind-page ~ div #toolbar {
   display: none !important;
 }
 
