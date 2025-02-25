@@ -37,10 +37,16 @@
       <div v-if="activeTab === 'transcript'" class="tab-content">
         <div v-if="hasTranscript" class="flex justify-between items-center mb-4">
           <p class="text-sm">{{ $strings.LabelTranscript }}</p>
-          <ui-btn @click="viewTranscript" variant="secondary">
-            <span class="material-symbols mr-2">description</span>
-            View Full Transcript
-          </ui-btn>
+          <div class="flex gap-2">
+            <ui-btn @click="viewTranscript" variant="secondary">
+              <span class="material-symbols mr-2">description</span>
+              View Full Transcript
+            </ui-btn>
+            <ui-btn v-if="qaEnabled" @click="vectorizeTranscript" variant="accent" :loading="isVectorizing" :disabled="isVectorizing">
+              <span class="material-symbols mr-2">psychology</span>
+              Vectorize for Q&A
+            </ui-btn>
+          </div>
         </div>
         <div v-else class="flex justify-between items-center mb-4">
           <p class="text-sm">{{ $strings.LabelTranscript }}</p>
@@ -136,6 +142,7 @@ export default {
       summaryQueuePosition: 0,
       isDeletingSummary: false,
       summary: null,
+      isVectorizing: false,
       tabs: [
         { id: 'description', label: 'Description', icon: 'description' },
         { id: 'transcript', label: 'Transcript', icon: 'record_voice_over' },
@@ -230,6 +237,9 @@ export default {
         console.error('Failed to parse summary markdown', error)
         return this.summary // Fallback to raw text
       }
+    },
+    qaEnabled() {
+      return this.$store.state.serverSettings?.openQA ?? false
     }
   },
   methods: {
@@ -312,6 +322,26 @@ export default {
         libraryItem: this.libraryItem,
         episode: this.episode
       })
+    },
+    async vectorizeTranscript() {
+      try {
+        this.isVectorizing = true
+        const response = await this.$axios.$post(`/api/transcripts/vectorize/${this.episodeId}`, {
+          podcastId: this.libraryItem.id,
+          libraryId: this.libraryItem.libraryId
+        })
+
+        if (response.success) {
+          this.$toast.success('Episode transcript vectorized successfully for Q&A search')
+        } else {
+          this.$toast.error(response.error || 'Failed to vectorize transcript')
+        }
+      } catch (error) {
+        console.error('Failed to vectorize transcript', error)
+        this.$toast.error(error.response?.data?.error || 'Failed to vectorize transcript for Q&A')
+      } finally {
+        this.isVectorizing = false
+      }
     }
   },
   mounted() {

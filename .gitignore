@@ -23,3 +23,5 @@ sw.*
 .DS_STORE
 .idea/*
 tailwind.compiled.css
+
+.config/gcloud/application_default_credentials.json

@@ -10,7 +10,7 @@ const { validateUrl } = require('../utils/index')
 const Scanner = require('../scanner/Scanner')
 const CoverManager = require('../managers/CoverManager')
 const TranscriptionManager = require('../managers/TranscriptionManager')
-
+const fs = require('../libs/fsExtra')
 /**
  * @typedef RequestUserObject
  * @property {import('../models/User')} user

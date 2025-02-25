@@ -43,6 +43,7 @@ class ServerSettings {
     // Podcasts
     this.podcastEpisodeSchedule = '0 * * * *' // Every hour
     this.transcriptionsEnabled = true // Enable/disable transcription functionality
+    this.openQA = true // Enable/disable Q&A search using vectorized transcripts
 
     // Sorting
     this.sortingIgnorePrefix = false
@@ -116,6 +117,7 @@ class ServerSettings {
 
     this.podcastEpisodeSchedule = settings.podcastEpisodeSchedule || '0 * * * *'
     this.transcriptionsEnabled = settings.transcriptionsEnabled !== undefined ? !!settings.transcriptionsEnabled : true
+    this.openQA = settings.openQA !== undefined ? !!settings.openQA : false
 
     this.sortingIgnorePrefix = !!settings.sortingIgnorePrefix
     this.sortingPrefixes = settings.sortingPrefixes || ['the']
@@ -229,6 +231,7 @@ class ServerSettings {
       bookshelfView: this.bookshelfView,
       podcastEpisodeSchedule: this.podcastEpisodeSchedule,
       transcriptionsEnabled: this.transcriptionsEnabled,
+      openQA: this.openQA,
       sortingIgnorePrefix: this.sortingIgnorePrefix,
       sortingPrefixes: [...this.sortingPrefixes],
       chromecastEnabled: this.chromecastEnabled,

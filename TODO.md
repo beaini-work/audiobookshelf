@@ -13,8 +13,9 @@
 - [X] create new left navbar called Knowledge (rethink term later)
 - [X] use chromadb with persistent storage for vector store
 - [X] button to vectorize the content on demand
-- [ ] search the vector store. where in the UI?
+- [X] search the vector store. where in the UI?
 - [ ] automate vectorization of new content
+- [ ] need to tweak all chatgpt openai params e.g. max token length, temp
 - [ ] vector store the content
 - [ ] openai key in docker deployment
 - [ ] ability to configure the summaries

@@ -144,6 +144,16 @@
             </ui-tooltip>
           </div>
 
+          <div role="article" :aria-label="'Enable Q&A search using vectorized transcripts'" class="flex items-center py-2">
+            <ui-toggle-switch label="Enable Q&A Search" v-model="newServerSettings.openQA" :disabled="updatingServerSettings" @input="(val) => updateSettingsKey('openQA', val)" />
+            <ui-tooltip aria-hidden="true" text="Enable Q&A search functionality using vectorized transcript data. Transcript vectorization is required for search.">
+              <p class="pl-4">
+                <span id="settings-qa-enabled">Enable Q&A Search</span>
+                <span class="material-symbols icon-text">info</span>
+              </p>
+            </ui-tooltip>
+          </div>
+
           <div class="flex-grow py-2">
             <ui-dropdown :label="$strings.LabelSettingsDateFormat" v-model="newServerSettings.dateFormat" :items="dateFormats" small class="max-w-52" @input="(val) => updateSettingsKey('dateFormat', val)" />
             <p class="text-xs ml-1 text-white text-opacity-60">{{ $strings.LabelExample }}: {{ dateExample }}</p>

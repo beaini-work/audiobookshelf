@@ -1,6 +1,6 @@
 const { PromptTemplate } = require("@langchain/core/prompts")
 const { ChatOpenAI } = require("@langchain/openai")
-const { StructuredOutputParser, OutputFixingParser } = require("langchain/output_parsers");
+const { StructuredOutputParser, OutputFixingParser } = require("@langchain/core/output_parsers");
 const { RunnableSequence } = require("@langchain/core/runnables");
 const { z } = require("zod");
 const Logger = require('../Logger');
@@ -8,10 +8,19 @@ const chromaManager = require('./ChromaManager');
 
 class TranscriptQAManager {
   constructor() {
+
+    // Validate OpenAI API key
+    if (!process.env.OPENAI_API_KEY) {
+      Logger.error('[SummaryManager] OpenAI API key not found. Please set the OPENAI_API_KEY environment variable.')
+      this.llm = null
+      return
+    }
+      
     this.llm = new ChatOpenAI({
       temperature: 0,
       modelName: 'gpt-4o-mini',
-      maxTokens: 500
+      maxTokens: 500,
+      apiKey: process.env.OPENAI_API_KEY, 
     });
 
     // Define the output schema using Zod
@@ -123,6 +132,119 @@ Response:`);
     } catch (error) {
       Logger.error('[TranscriptQAManager] Query failed', error);
       throw error;
+    }
+  }
+
+  /**
+   * Vectorize transcript segments from an episode for Q&A search
+   * 
+   * @param {Object} episode - The episode object
+   * @param {string} podcastTitle - The podcast title
+   * @param {string} libraryId - The library ID
+   * @returns {Promise<boolean>} - Success status
+   */
+  async vectorizeEpisodeTranscript(episode, podcastTitle, libraryId) {
+    try {
+      if (!episode || !episode.id || !episode.transcript) {
+        Logger.warn('[TranscriptQAManager] Cannot vectorize - episode has no transcript', { episodeId: episode?.id });
+        return false;
+      }
+
+      // Delete any existing vectors for this episode
+      await chromaManager.deleteTranscriptsByEpisodeId(episode.id);
+      
+      Logger.info(`[TranscriptQAManager] Vectorizing transcript for episode: ${episode.id}`);
+      
+      // Handle both old and new transcript formats
+      let segments = [];
+      
+      if (Array.isArray(episode.transcript.segments)) {
+        // New format with dedicated segments array
+        segments = episode.transcript.segments;
+      } else if (episode.transcript.results && Array.isArray(episode.transcript.results)) {
+        // New format where we need to use results to create segments
+        segments = episode.transcript.results.map(result => {
+          // Extract first and last word timestamps if available
+          const words = result.words || [];
+          let start = 0;
+          let end = 0;
+          
+          if (words.length > 0) {
+            start = words[0].startTime.seconds || 0;
+            end = words[words.length - 1].endTime.seconds || 0;
+          }
+          
+          return {
+            text: result.transcript,
+            start,
+            end
+          };
+        });
+      } else if (Array.isArray(episode.transcript)) {
+        // Old format: convert transcript results to segments
+        segments = episode.transcript.map(result => {
+          // Extract first and last word timestamps if available
+          const words = result.words || [];
+          let start = 0;
+          let end = 0;
+          
+          if (words.length > 0) {
+            start = words[0].startTime.seconds || 0;
+            end = words[words.length - 1].endTime.seconds || 0;
+          }
+          
+          return {
+            text: result.transcript,
+            start,
+            end
+          };
+        });
+      }
+      
+      if (!segments.length) {
+        Logger.warn('[TranscriptQAManager] Cannot vectorize - transcript has no segments', { episodeId: episode.id });
+        return false;
+      }
+      
+      // Group segments into chunks of approximately 1000 characters or 5 segments
+      const chunkSize = 5;
+      const chunks = [];
+      
+      for (let i = 0; i < segments.length; i += chunkSize) {
+        const chunk = segments.slice(i, i + chunkSize);
+        const startTime = chunk[0].start;
+        const endTime = chunk[chunk.length - 1].end;
+        const text = chunk.map(seg => seg.text).join(' ');
+        
+        chunks.push({
+          text,
+          startTime,
+          endTime
+        });
+      }
+      
+      // Vectorize each chunk
+      for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
+        const chunkId = `${episode.id}_${i}`;
+        
+        await chromaManager.addTranscriptChunk(chunk.text, {
+          chunkId,
+          episodeId: episode.id,
+          podcastId: episode.podcastId,
+          episodeTitle: episode.title,
+          podcastTitle,
+          startTime: chunk.startTime,
+          endTime: chunk.endTime,
+          libraryId
+        });
+      }
+      
+      Logger.info(`[TranscriptQAManager] Successfully vectorized ${chunks.length} chunks for episode: ${episode.id}`);
+      return true;
+    } catch (error) {
+      Logger.error('[TranscriptQAManager] Failed to vectorize episode transcript', error);
+      return false;
     }
   }
 }

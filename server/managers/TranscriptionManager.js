@@ -179,7 +179,31 @@ class TranscriptionManager {
         }
       })
 
-      episode.transcript = structuredTranscript
+      // Transform transcript to include segments for vectorization
+      const segments = response.results.map(result => {
+        const alternative = result.alternatives[0]
+        const words = alternative.words || []
+        
+        // Calculate segment start and end times
+        let start = 0
+        let end = 0
+        if (words.length > 0) {
+          start = words[0].startTime.seconds || 0
+          end = words[words.length - 1].endTime.seconds || 0
+        }
+        
+        return {
+          text: alternative.transcript,
+          start,
+          end
+        }
+      })
+
+      // Save both the original structured transcript and segments needed for vectorization
+      episode.transcript = {
+        results: structuredTranscript,
+        segments
+      }
       delete episode.transcriptionOperation
       await episode.save()
 
