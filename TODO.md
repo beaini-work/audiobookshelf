@@ -6,7 +6,6 @@
 - [ ] add setting to transcribe on download
 - [x] add config / setting to display transcript in player
 - [x] setting for the size of the transcript
-- [ ] check if can transcript on this server before turning it on
 
 ## search content
 
@@ -24,7 +23,7 @@
 
 - [ ] Button to transcribe and summarize
 - [ ] Display summaries in the Knowledge section
-- [ ] clean up the summarize UI
+- [ ] clean up the summarize UI. specifically the header
 - [ ] Fix font color in view episode modal when text is selected (currently not visible)
 - [ ] Show transcript content directly in transcript tab instead of requiring button click
 - [ ] Improve CTA placement and design for Generate Summary and Transcribe buttons:
@@ -40,6 +39,8 @@
 - [ ] tutorial intro
 
 ## audio Q&A
+
+- [ ] share the results
 
 # fixes
 
@@ -81,3 +82,4 @@
 - [ ] clicking transcript syncs to that time
 - [ ] use tokenizer to split transcript into chunks for vectorization
 - [ ] Add progress tracking for the summary generation process?
+- [ ] check if can transcript on this server before turning it on
