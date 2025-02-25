@@ -25,3 +25,5 @@ sw.*
 tailwind.compiled.css
 
 .config/gcloud/application_default_credentials.json
+
+/openai-realtime-voice-demo/
