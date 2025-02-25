@@ -51,31 +51,29 @@
         </div>
         <div v-else class="flex flex-col items-center justify-center h-full py-10">
           <div class="max-w-lg text-center">
-            <div class="bg-black-300/20 rounded-lg p-6 mb-6">
-              <span class="material-symbols text-5xl text-primary mb-4">record_voice_over</span>
+            <div class="rounded-lg p-6 mb-6">
+              <span class="material-symbols text-5xl text-white mb-4">record_voice_over</span>
               <h3 class="text-xl font-medium mb-2">No Transcript Available</h3>
               <p class="text-gray-300 mb-6">Generate a transcript to easily search, review, and analyze the content of this episode.</p>
 
               <div v-if="transcriptionsEnabled">
                 <ui-btn v-if="!isTranscribing && !isQueued" @click="transcribeEpisode" size="lg" icon="record_voice_over" :loading="isTranscribing" class="w-full justify-center"> Generate Transcript </ui-btn>
-                <div v-else-if="isQueued" class="text-center p-4 bg-black-300/30 rounded-lg">
+                <div v-else-if="isQueued" class="text-center p-4 rounded-lg">
                   <span class="material-symbols text-2xl mb-2">queue</span>
                   <p class="text-sm mb-1">Queued for Transcription</p>
                   <p class="text-xs text-gray-400">Your transcript will be generated soon.</p>
                 </div>
-                <div v-else-if="isTranscribing" class="text-center p-4 bg-black-300/30 rounded-lg">
+                <div v-else-if="isTranscribing" class="text-center p-4 rounded-lg">
                   <span class="material-symbols text-2xl mb-2 animate-spin">refresh</span>
                   <p class="text-sm mb-1">Transcribing Episode...</p>
                   <p class="text-xs text-gray-400">This may take a few minutes.</p>
                 </div>
               </div>
-              <div v-else class="text-center p-4 bg-black-300/30 rounded-lg">
+              <div v-else class="text-center p-4 rounded-lg">
                 <span class="material-symbols text-2xl mb-2">info</span>
                 <p class="text-sm text-gray-300">Transcriptions are not enabled on this server.</p>
               </div>
             </div>
-
-            <p class="text-xs text-gray-500">Transcripts help with content discovery, accessibility, and enable AI-powered features like summaries and knowledge testing.</p>
           </div>
         </div>
       </div>
@@ -92,24 +90,26 @@
         <div v-if="hasSummary" class="prose prose-invert max-w-none summary-content">
           <div v-html="formattedSummary"></div>
         </div>
-        <div v-else-if="isSummaryQueued" class="text-center py-8">
-          <span class="material-symbols text-4xl mb-2">queue</span>
-          <p>Queued for Summary Generation</p>
-          <p class="text-xs text-gray-400 mt-2">Position in queue: {{ summaryQueuePosition }}</p>
+        <div v-else-if="isSummaryQueued" class="text-center p-4 rounded-lg max-w-md mx-auto">
+          <span class="material-symbols text-2xl mb-2">queue</span>
+          <p class="text-sm mb-1">Queued for Summary Generation</p>
+          <p class="text-xs text-gray-400">Your summary will be generated soon.</p>
+          <p v-if="summaryQueuePosition > 0" class="text-xs text-gray-400 mt-2">Position in queue: {{ summaryQueuePosition }}</p>
         </div>
-        <div v-else-if="isSummarizing" class="text-center py-8">
-          <span class="material-symbols text-4xl mb-2 animate-spin">refresh</span>
-          <p>Generating Summary...</p>
+        <div v-else-if="isSummarizing" class="text-center p-4 rounded-lg max-w-md mx-auto">
+          <span class="material-symbols text-2xl mb-2 animate-spin">refresh</span>
+          <p class="text-sm mb-1">Generating Summary...</p>
+          <p class="text-xs text-gray-400">This may take a few minutes.</p>
         </div>
-        <div v-else-if="!hasTranscript" class="text-center py-8">
-          <span class="material-symbols text-4xl mb-2">record_voice_over</span>
-          <p>Transcript Required</p>
-          <p class="text-xs text-gray-400 mt-2">Generate a transcript first to create a summary</p>
+        <div v-else-if="!hasTranscript" class="text-center p-4 rounded-lg max-w-md mx-auto">
+          <span class="material-symbols text-5xl text-white mb-4">record_voice_over</span>
+          <h3 class="text-xl font-medium mb-2">Transcript Required</h3>
+          <p class="text-gray-300 mb-6">Generate a transcript first to create a summary.</p>
         </div>
         <div v-else class="flex flex-col items-center justify-center h-full py-10">
           <div class="max-w-lg text-center">
-            <div class="rounded-lg p-6 mb-4">
-              <span class="material-symbols text-5xl text-primary mb-4">summarize</span>
+            <div class="rounded-lg p-6 mb-6">
+              <span class="material-symbols text-5xl text-white mb-4">summarize</span>
               <h3 class="text-xl font-medium mb-2">No Summary Available</h3>
               <p class="text-gray-300 mb-6">Generate a summary to quickly understand the key points of this episode.</p>
 
