@@ -140,7 +140,9 @@ Response:`);
             timestamp: formattedTimestamp,
             // Add these new fields for client-side use
             podcastTitle: matchingResult?.metadata.podcastTitle || segment.podcastTitle,
-            episodeTitle: matchingResult?.metadata.episodeTitle || segment.episodeTitle
+            episodeTitle: matchingResult?.metadata.episodeTitle || segment.episodeTitle,
+            // Include the transcript content that contains the answer
+            transcriptContent: matchingResult ? matchingResult.content : segment.context || ''
           };
         })
       };

@@ -66,7 +66,7 @@
 
         <h3 class="text-lg font-semibold mb-3">Sources</h3>
         <div v-if="searchResults.sources && searchResults.sources.length" class="space-y-4">
-          <div v-for="(source, index) in searchResults.sources" :key="index" class="bg-gray-800 p-4 rounded-lg">
+          <div v-for="(source, index) in searchResults.sources" :key="index" class="bg-gray-800 p-4 rounded-lg transition-all duration-200 hover:bg-gray-750 hover:border-gray-600 border border-transparent" @click="toggleTranscript(index)">
             <div class="flex items-start">
               <!-- Episode cover image -->
               <div class="flex-shrink-0 mr-4">
@@ -76,16 +76,27 @@
                 </div>
               </div>
 
-              <!-- Episode info and play button -->
-              <div class="flex-grow flex items-start justify-between">
-                <div>
-                  <h4 class="font-medium">{{ source.episodeTitle || getEpisodeTitle(source.episodeId) }}</h4>
-                  <p class="text-sm text-gray-400">{{ source.podcastTitle || getPodcastTitle(source.podcastId) }}</p>
+              <!-- Episode info section with accordion-style design -->
+              <div class="flex-grow">
+                <div class="flex justify-between items-center">
+                  <div class="flex-1 pr-4">
+                    <h4 class="font-medium">{{ source.episodeTitle || getEpisodeTitle(source.episodeId) }}</h4>
+                    <p class="text-sm text-gray-400">{{ source.podcastTitle || getPodcastTitle(source.podcastId) }}</p>
+                  </div>
+                  <!-- Large chevron indicator -->
+                  <div v-if="source.transcriptContent" class="flex-shrink-0">
+                    <span class="material-symbols chevron-icon text-3xl text-blue-400 transform transition-transform duration-300" :class="{ 'rotate-180': expandedTranscripts[index] }">expand_more</span>
+                  </div>
                 </div>
-                <button class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1 rounded-md flex items-center" @click="playEpisodeAtTimestamp(source.episodeId, source.timestamp)">
-                  <span class="material-symbols fill text-sm mr-1">play_arrow</span>
-                  {{ source.timestamp }}
-                </button>
+
+                <!-- Display transcript content with animation -->
+                <transition name="accordion">
+                  <div v-if="source.transcriptContent && expandedTranscripts[index]" class="mt-3 border-t border-gray-700 pt-3">
+                    <div class="text-gray-300 text-sm bg-gray-800 bg-opacity-50 p-4 rounded whitespace-pre-line transcript-content overflow-y-auto max-h-64">
+                      {{ source.transcriptContent }}
+                    </div>
+                  </div>
+                </transition>
               </div>
             </div>
           </div>
@@ -113,7 +124,8 @@ export default {
       searchPerformed: false,
       searchError: null,
       selectedLibraryIds: [],
-      searchExamples: ['What are the key insights about AI safety?', 'Summarize the discussion about climate change', 'What did they say about meditation benefits?']
+      searchExamples: ['What are the key insights about AI safety?', 'Summarize the discussion about climate change', 'What did they say about meditation benefits?'],
+      expandedTranscripts: {} // Track which transcripts are expanded by their index
     }
   },
   computed: {
@@ -143,6 +155,7 @@ export default {
       this.searchPerformed = true
       this.searchResults = null
       this.searchError = null
+      this.expandedTranscripts = {} // Reset expanded transcripts
 
       try {
         const response = await this.$axios.$post('/api/transcripts/query', {
@@ -281,6 +294,10 @@ export default {
       // Play the episode
       this.$store.commit('setPlaybackRate', 1)
       this.$store.dispatch('playQueueItems', [queueItem])
+    },
+    toggleTranscript(index) {
+      // Toggle the expanded state of a transcript
+      this.$set(this.expandedTranscripts, index, !this.expandedTranscripts[index])
     }
   },
   mounted() {
@@ -308,5 +325,60 @@ export default {
 /* Ensure material symbols still work */
 .material-symbols {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Custom styling for the large chevron icon */
+.chevron-icon {
+  font-size: 32px !important;
+  font-variation-settings: 'FILL' 1, 'wght' 600, 'GRAD' 0, 'opsz' 40;
+  text-shadow: 0 0 8px rgba(66, 153, 225, 0.3);
+  cursor: pointer;
+}
+
+/* Animation styles for the transcript with accordion effect */
+.accordion-enter-active,
+.accordion-leave-active {
+  transition: all 0.3s ease;
+  max-height: 500px;
+  opacity: 1;
+  margin-top: 0.75rem;
+}
+.accordion-enter,
+.accordion-leave-to {
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
+  overflow: hidden;
+}
+
+/* Simpler animation that preserves the slide effect */
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 0.3s ease;
+  max-height: 1000px;
+  opacity: 1;
+  overflow: hidden;
+}
+.slide-fade-enter,
+.slide-fade-leave-to {
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
+}
+
+/* Make transcript scrollable */
+.transcript-content {
+  scrollbar-width: thin;
+  scrollbar-color: #4a5568 #1f2937;
+}
+.transcript-content::-webkit-scrollbar {
+  width: 8px;
+}
+.transcript-content::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+.transcript-content::-webkit-scrollbar-thumb {
+  background-color: #4a5568;
+  border-radius: 4px;
 }
 </style> 
