@@ -1,6 +1,7 @@
 <template>
-  <div class="knowledge-page">
-    <div class="bg-primary p-8 md:px-12 w-full">
+  <div class="knowledge-page flex flex-col h-screen">
+    <!-- Fixed search header -->
+    <div class="bg-primary p-8 md:px-12 w-full flex-shrink-0">
       <div class="flex flex-col max-w-5xl mx-auto">
         <h1 class="text-2xl md:text-3xl font-semibold mb-4">Knowledge Base</h1>
         <p class="text-gray-300 mb-6">Search across your podcast transcripts with natural language questions.</p>
@@ -37,71 +38,73 @@
       </div>
     </div>
 
-    <!-- Results Area -->
-    <div class="max-w-5xl mx-auto px-8 py-6">
-      <!-- Loading state -->
-      <div v-if="isSearching" class="flex flex-col items-center justify-center py-12">
-        <widgets-loading-spinner size="la-2x" />
-        <p class="mt-4 text-gray-300">Searching your podcasts...</p>
-      </div>
+    <!-- Scrollable results area (takes remaining height) -->
+    <div class="flex-grow overflow-y-auto content-container">
+      <div class="max-w-5xl mx-auto px-8 py-6">
+        <!-- Loading state -->
+        <div v-if="isSearching" class="flex flex-col items-center justify-center py-12">
+          <widgets-loading-spinner size="la-2x" />
+          <p class="mt-4 text-gray-300">Searching your podcasts...</p>
+        </div>
 
-      <!-- Empty state after search -->
-      <div v-else-if="searchPerformed && !searchResults" class="text-center py-12">
-        <div class="material-symbols text-6xl text-gray-600 mb-4">search_off</div>
-        <h3 class="text-xl font-semibold mb-2">No results found</h3>
-        <p class="text-gray-400">Try a different query or select more libraries to search in.</p>
-      </div>
+        <!-- Empty state after search -->
+        <div v-else-if="searchPerformed && !searchResults" class="text-center py-12">
+          <div class="material-symbols text-6xl text-gray-600 mb-4">search_off</div>
+          <h3 class="text-xl font-semibold mb-2">No results found</h3>
+          <p class="text-gray-400">Try a different query or select more libraries to search in.</p>
+        </div>
 
-      <!-- Error state -->
-      <div v-else-if="searchError" class="text-center py-12">
-        <div class="material-symbols text-6xl text-red-500 mb-4">error</div>
-        <h3 class="text-xl font-semibold mb-2">Something went wrong</h3>
-        <p class="text-gray-400">{{ searchError }}</p>
-      </div>
+        <!-- Error state -->
+        <div v-else-if="searchError" class="text-center py-12">
+          <div class="material-symbols text-6xl text-red-500 mb-4">error</div>
+          <h3 class="text-xl font-semibold mb-2">Something went wrong</h3>
+          <p class="text-gray-400">{{ searchError }}</p>
+        </div>
 
-      <!-- Results display -->
-      <div v-else-if="searchResults" class="bg-gray-900 rounded-lg p-6 mb-8">
-        <h2 class="text-xl font-semibold mb-4">Answer</h2>
-        <div class="text-gray-200 mb-8 whitespace-pre-line">{{ searchResults.answer }}</div>
+        <!-- Results display -->
+        <div v-else-if="searchResults" class="bg-gray-900 rounded-lg p-6 mb-8">
+          <h2 class="text-xl font-semibold mb-4">Answer</h2>
+          <div class="text-gray-200 mb-8 whitespace-pre-line">{{ searchResults.answer }}</div>
 
-        <h3 class="text-lg font-semibold mb-3">Sources</h3>
-        <div v-if="searchResults.sources && searchResults.sources.length" class="space-y-4">
-          <div v-for="(source, index) in searchResults.sources" :key="index" class="bg-gray-800 p-4 rounded-lg transition-all duration-200 hover:bg-gray-750 hover:border-gray-600 border border-transparent" @click="toggleTranscript(index)">
-            <div class="flex items-start">
-              <!-- Episode cover image -->
-              <div class="flex-shrink-0 mr-4">
-                <img v-if="source.coverPath" :src="'/api/items/path/' + source.coverPath" :alt="source.episodeTitle || 'Episode cover'" class="w-16 h-16 rounded-md object-cover" />
-                <div v-else class="w-16 h-16 rounded-md bg-gray-700 flex items-center justify-center">
-                  <span class="material-symbols text-gray-500">podcasts</span>
-                </div>
-              </div>
-
-              <!-- Episode info section with accordion-style design -->
-              <div class="flex-grow">
-                <div class="flex justify-between items-center">
-                  <div class="flex-1 pr-4">
-                    <h4 class="font-medium">{{ source.episodeTitle || getEpisodeTitle(source.episodeId) }}</h4>
-                    <p class="text-sm text-gray-400">{{ source.podcastTitle || getPodcastTitle(source.podcastId) }}</p>
-                  </div>
-                  <!-- Large chevron indicator -->
-                  <div v-if="source.transcriptContent" class="flex-shrink-0">
-                    <span class="material-symbols chevron-icon text-3xl text-blue-400 transform transition-transform duration-300" :class="{ 'rotate-180': expandedTranscripts[index] }">expand_more</span>
+          <h3 class="text-lg font-semibold mb-3">Sources</h3>
+          <div v-if="searchResults.sources && searchResults.sources.length" class="space-y-4">
+            <div v-for="(source, index) in searchResults.sources" :key="index" class="bg-gray-800 p-4 rounded-lg transition-all duration-200 hover:bg-gray-750 hover:border-gray-600 border border-transparent" @click="toggleTranscript(index)">
+              <div class="flex items-start">
+                <!-- Episode cover image -->
+                <div class="flex-shrink-0 mr-4">
+                  <img v-if="source.coverPath" :src="'/api/items/path/' + source.coverPath" :alt="source.episodeTitle || 'Episode cover'" class="w-16 h-16 rounded-md object-cover" />
+                  <div v-else class="w-16 h-16 rounded-md bg-gray-700 flex items-center justify-center">
+                    <span class="material-symbols text-gray-500">podcasts</span>
                   </div>
                 </div>
 
-                <!-- Display transcript content with animation -->
-                <transition name="accordion">
-                  <div v-if="source.transcriptContent && expandedTranscripts[index]" class="mt-3 border-t border-gray-700 pt-3">
-                    <div class="text-gray-300 text-sm bg-gray-800 bg-opacity-50 p-4 rounded whitespace-pre-line transcript-content overflow-y-auto max-h-64">
-                      {{ source.transcriptContent }}
+                <!-- Episode info section with accordion-style design -->
+                <div class="flex-grow">
+                  <div class="flex justify-between items-center">
+                    <div class="flex-1 pr-4">
+                      <h4 class="font-medium">{{ source.episodeTitle || getEpisodeTitle(source.episodeId) }}</h4>
+                      <p class="text-sm text-gray-400">{{ source.podcastTitle || getPodcastTitle(source.podcastId) }}</p>
+                    </div>
+                    <!-- Large chevron indicator -->
+                    <div v-if="source.transcriptContent" class="flex-shrink-0">
+                      <span class="material-symbols chevron-icon text-3xl text-blue-400 transform transition-transform duration-300" :class="{ 'rotate-180': expandedTranscripts[index] }">expand_more</span>
                     </div>
                   </div>
-                </transition>
+
+                  <!-- Display transcript content with animation -->
+                  <transition name="accordion">
+                    <div v-if="source.transcriptContent && expandedTranscripts[index]" class="mt-3 border-t border-gray-700 pt-3">
+                      <div class="text-gray-300 text-sm bg-gray-800 bg-opacity-50 p-4 rounded whitespace-pre-line transcript-content overflow-y-auto max-h-64">
+                        {{ source.transcriptContent }}
+                      </div>
+                    </div>
+                  </transition>
+                </div>
               </div>
             </div>
           </div>
+          <div v-else class="text-gray-400 italic">No specific sources provided</div>
         </div>
-        <div v-else class="text-gray-400 italic">No specific sources provided</div>
       </div>
     </div>
   </div>
@@ -378,6 +381,22 @@ export default {
   background: #1f2937;
 }
 .transcript-content::-webkit-scrollbar-thumb {
+  background-color: #4a5568;
+  border-radius: 4px;
+}
+
+/* Apply scrollbar styling to content container */
+.content-container {
+  scrollbar-width: thin;
+  scrollbar-color: #4a5568 #1f2937;
+}
+.content-container::-webkit-scrollbar {
+  width: 8px;
+}
+.content-container::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+.content-container::-webkit-scrollbar-thumb {
   background-color: #4a5568;
   border-radius: 4px;
 }

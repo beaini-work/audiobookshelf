@@ -72,6 +72,7 @@
 
 # highly optional todos
 
+- [ ] use openai for transcription
 - [ ] display suggested questions to ask in the knowledge base
 - [ ] change chromadb credentials
 - [ ] update table name of summaries. inconsistent naming pattern
