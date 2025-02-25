@@ -20,11 +20,21 @@ services:
       # The config directory needs to be on the same physical machine
       # you are running ABS on
       - ./config:/config
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL}
+      - OPENAI_TEMPERATURE=${OPENAI_TEMPERATURE}
+      - CHROMA_HOST=chroma
+      - CHROMA_PORT=8000
+      - CHROMA_AUTH_PROVIDER=${CHROMA_AUTH_PROVIDER}
+      - CHROMA_AUTH_CREDENTIALS=${CHROMA_AUTH_CREDENTIALS}
     restart: unless-stopped
     # You can use the following user directive to run the ABS
     # docker container as a specific user. You will need to change
     # the UID and GID to the correct values for your user.
     # user: 1000:1000
+    networks:
+      - chroma_net
 
   chroma:
     image: chromadb/chroma:latest
@@ -34,8 +44,8 @@ services:
       - "8000:8000"
     environment:
       - ALLOW_RESET=true
-      - CHROMA_SERVER_AUTH_CREDENTIALS=admin:admin  # Change these credentials
-      - CHROMA_SERVER_AUTH_PROVIDER=basic
+      - CHROMA_SERVER_AUTH_CREDENTIALS=${CHROMA_AUTH_CREDENTIALS}
+      - CHROMA_SERVER_AUTH_PROVIDER=${CHROMA_AUTH_PROVIDER}
       - CHROMA_SERVER_AUTH_TOKEN_TRANSPORT_HEADER=AUTHORIZATION
     networks:
       - chroma_net

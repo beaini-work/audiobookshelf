@@ -15,9 +15,8 @@
 - [X] button to vectorize the content on demand
 - [X] search the vector store. where in the UI?
 - [ ] automate vectorization of new content
-- [ ] need to tweak all chatgpt openai params e.g. max token length, temp
 - [X] vector store the content
-- [ ] openai key in docker deployment
+- [X] openai key in docker deployment
 - [ ] ability to configure the summaries
 - [ ] ability to check the episode summary from the KB search result
 

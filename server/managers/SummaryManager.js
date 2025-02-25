@@ -13,11 +13,18 @@ class SummaryManager {
   constructor() {
     this.currentSummary = null
     this.summaryQueue = []
+    
+    // Use environment variables for ChromaDB connection
+    const chromaHost = process.env.CHROMA_HOST || 'http://10.10.2.248';
+    const chromaPort = process.env.CHROMA_PORT || '8000';
+    const chromaAuthProvider = process.env.CHROMA_AUTH_PROVIDER || 'basic';
+    const chromaAuthCredentials = process.env.CHROMA_AUTH_CREDENTIALS || 'admin:admin';
+    
     this.chromaClient = new ChromaClient({
-      path: "http://10.10.2.248:8000", // Connect to host's Docker network
+      path: `${chromaHost}:${chromaPort}`,
       auth: {
-        provider: "basic",
-        credentials: "admin:admin"
+        provider: chromaAuthProvider,
+        credentials: chromaAuthCredentials
       }
     })
     this.collectionName = 'podcast_episodes'
@@ -29,11 +36,11 @@ class SummaryManager {
       return
     }
     
-    // Initialize LangChain components
+    // Initialize LangChain components with environment variables
     try {
       this.llm = new ChatOpenAI({
-        modelName: "gpt-4o-mini",
-        temperature: 0.3,
+        modelName: process.env.OPENAI_MODEL || "gpt-4o-mini",
+        temperature: parseFloat(process.env.OPENAI_TEMPERATURE || "0.3"),
         apiKey: process.env.OPENAI_API_KEY, 
       })
     } catch (error) {

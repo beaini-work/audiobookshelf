@@ -4,12 +4,17 @@ const path = require('path');
 
 class ChromaManager {
   constructor() {
-    // Use the same connection settings as in Server.js
+    // Use environment variables for ChromaDB connection
+    const chromaHost = process.env.CHROMA_HOST || 'http://10.10.2.248';
+    const chromaPort = process.env.CHROMA_PORT || '8000';
+    const chromaAuthProvider = process.env.CHROMA_AUTH_PROVIDER || 'basic';
+    const chromaAuthCredentials = process.env.CHROMA_AUTH_CREDENTIALS || 'admin:admin';
+    
     this.client = new ChromaClient({
-      path: 'http://10.10.2.248:8000',
+      path: `${chromaHost}:${chromaPort}`,
       auth: {
-        provider: 'basic',
-        credentials: 'admin:admin'
+        provider: chromaAuthProvider,
+        credentials: chromaAuthCredentials
       }
     });
     this.collection = null;

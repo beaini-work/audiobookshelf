@@ -1,3 +1,6 @@
+// Load environment variables from .env file
+require('dotenv').config()
+
 const optionDefinitions = [
   { name: 'config', alias: 'c', type: String },
   { name: 'metadata', alias: 'm', type: String },

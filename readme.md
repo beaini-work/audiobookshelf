@@ -447,6 +447,39 @@ If you are using VSCode, this project includes a couple of pre-defined targets t
 - `Debug client (nuxt)`—Run the client with live reload.
 - `Debug server and client (nuxt)`—Runs both the preceding two debug targets.
 
+### Environment Variables
+
+Audiobookshelf supports configuration through environment variables. You can set these in your `.env` file or through Docker environment variables. A sample `.env.example` file is provided as a template.
+
+#### Core Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| PORT | Server port | 3333 |
+| HOST | Server host | - |
+| CONFIG_PATH | Path to configuration files | ./config |
+| METADATA_PATH | Path to metadata files | ./metadata |
+| ROUTER_BASE_PATH | Base path for the router | /audiobookshelf |
+
+#### OpenAI Configuration (for AI features)
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| OPENAI_API_KEY | OpenAI API key (required for AI features) | - |
+| OPENAI_MODEL | OpenAI model to use | gpt-4o-mini |
+| OPENAI_TEMPERATURE | Temperature parameter for OpenAI | 0.3 |
+
+#### ChromaDB Configuration (for vector storage)
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| CHROMA_HOST | ChromaDB host URL | http://10.10.2.248 |
+| CHROMA_PORT | ChromaDB port | 8000 |
+| CHROMA_AUTH_PROVIDER | ChromaDB authentication provider | basic |
+| CHROMA_AUTH_CREDENTIALS | ChromaDB authentication credentials | admin:admin |
+
+For Docker deployment, these variables can be set in the `docker-compose.yml` file.
+
 # How to Support
 
 [See the incomplete "How to Support" page](https://www.audiobookshelf.org/support)

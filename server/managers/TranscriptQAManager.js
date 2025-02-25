@@ -17,8 +17,8 @@ class TranscriptQAManager {
     }
       
     this.llm = new ChatOpenAI({
-      temperature: 0,
-      modelName: 'gpt-4o-mini',
+      temperature: parseFloat(process.env.OPENAI_TEMPERATURE || "0"),
+      modelName: process.env.OPENAI_MODEL || 'gpt-4o-mini',
       maxTokens: 500,
       apiKey: process.env.OPENAI_API_KEY, 
     });
