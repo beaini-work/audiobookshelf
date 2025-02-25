@@ -14,10 +14,14 @@
           <p class="text-base mb-1">{{ podcastTitle }}</p>
           <p class="text-xs text-gray-300">{{ podcastAuthor }}</p>
         </div>
-        <div class="flex items-center">
+        <div class="flex items-center space-x-2">
           <button @click="openVoiceChat" class="px-3 py-1 rounded-md bg-primary text-white hover:bg-primary-600 transition-colors flex items-center">
             <span class="material-symbols mr-1">record_voice_over</span>
             Voice Chat
+          </button>
+          <button @click="openPodcastKnowledgeQuiz" class="px-3 py-1 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition-colors flex items-center" :class="{ 'opacity-50 cursor-not-allowed': !canTestKnowledge }" :disabled="!canTestKnowledge">
+            <span class="material-symbols mr-1">psychology</span>
+            Test Knowledge
           </button>
         </div>
       </div>
@@ -246,11 +250,40 @@ export default {
     },
     qaEnabled() {
       return this.$store.state.serverSettings?.openQA ?? false
+    },
+    canTestKnowledge() {
+      // Podcast knowledge quiz can only be tested if there's a summary
+      return this.hasSummary
     }
   },
   methods: {
     openVoiceChat() {
       this.$store.commit('globals/setShowVoiceChatModal', true)
+    },
+    openPodcastKnowledgeQuiz() {
+      // Prepare episode data for the voice chat
+      const episodeData = {
+        title: this.title,
+        podcastTitle: this.podcastTitle,
+        author: this.podcastAuthor,
+        description: this.description,
+        summary: this.hasSummary ? this.summary : null,
+        transcript: this.hasTranscript ? this.episodeId : null // For possible future transcript access
+      }
+
+      // Set the episode data in the store
+      this.$store.commit('globals/setVoiceChatEpisodeData', episodeData)
+
+      // Open the voice chat modal
+      this.$store.commit('globals/setShowVoiceChatModal', true)
+
+      // Short delay to make sure the modal is open and can receive the toast
+      setTimeout(() => {
+        this.$toast.info('Podcast knowledge quiz ready! Ask the assistant to test your knowledge about this episode.', {
+          position: 'bottom-center',
+          timeout: 5000
+        })
+      }, 500)
     },
     async checkTranscriptionStatus() {
       try {

@@ -14,6 +14,7 @@ export const state = () => ({
   showConfirmPrompt: false,
   showRawCoverPreviewModal: false,
   showVoiceChatModal: false,
+  voiceChatEpisodeData: null,
   confirmPromptOptions: null,
   showEditAuthorModal: false,
   rssFeedEntity: null,
@@ -236,5 +237,11 @@ export const mutations = {
   },
   setShowVoiceChatModal(state, val) {
     state.showVoiceChatModal = val
+    if (!val) {
+      state.voiceChatEpisodeData = null
+    }
+  },
+  setVoiceChatEpisodeData(state, data) {
+    state.voiceChatEpisodeData = data
   }
 }

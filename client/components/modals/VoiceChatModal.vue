@@ -2,7 +2,7 @@
   <modals-modal v-model="show" name="voice-chat-modal" :width="900" :height="'unset'" :processing="false">
     <template #outer>
       <div class="absolute top-0 left-0 p-5 w-2/3 overflow-hidden">
-        <p class="text-3xl text-white truncate">Voice Chat</p>
+        <p class="text-3xl text-white truncate">Podcast Knowledge Quiz</p>
       </div>
     </template>
     <div ref="wrapper" class="p-4 w-full text-sm rounded-lg bg-bg shadow-lg border border-black-300 relative overflow-y-auto" style="max-height: 80vh">
@@ -10,8 +10,14 @@
         <!-- Session Controls and Response Panel -->
         <div class="flex-1 flex flex-col border border-primary/30 rounded-md p-4 min-h-0 bg-bg-dark">
           <div v-if="!isSessionActive" class="flex-1 flex flex-col items-center justify-center">
-            <button @click="startSession" class="rounded-md bg-primary text-white px-6 py-3 text-xl hover:bg-primary-600 transition-colors">Start Voice Chat Session</button>
-            <p class="mt-4 text-gray-300 text-center max-w-md">Start a realtime voice conversation with OpenAI's GPT-4o model. Speak naturally and get responses in real-time.</p>
+            <div v-if="hasEpisodeData">
+              <button @click="startSession" class="rounded-md bg-primary text-white px-6 py-3 text-xl hover:bg-primary-600 transition-colors">Start Podcast Quiz</button>
+              <p class="mt-4 text-gray-300 text-center max-w-md">Start a quiz session to test your knowledge about "{{ episodeData.title }}". Answer questions and get feedback to enhance your understanding.</p>
+            </div>
+            <div v-else class="text-center p-6">
+              <p class="text-red-400 text-xl mb-4">No Episode Data Available</p>
+              <p class="text-gray-300 max-w-md">Please select a podcast episode with a summary to take a knowledge quiz.</p>
+            </div>
           </div>
 
           <div v-else class="flex-1 flex flex-col min-h-0">
@@ -84,6 +90,49 @@
 </template>
 
 <script>
+// Function description similar to the React pattern
+const functionDescription = `
+Call this function when assessing a user's knowledge about a podcast episode they listened to. Evaluate their answer fairly and provide a score based on accuracy.
+`
+
+// Session update similar to the React pattern
+const sessionUpdate = {
+  type: 'session.update',
+  session: {
+    tools: [
+      {
+        type: 'function',
+        name: 'assess_podcast_knowledge',
+        description: functionDescription,
+        parameters: {
+          type: 'object',
+          strict: true,
+          properties: {
+            question: {
+              type: 'string',
+              description: 'The question about the podcast episode'
+            },
+            correctAnswer: {
+              type: 'string',
+              description: 'Detailed correct answer explanation about the podcast content'
+            },
+            userAnswer: {
+              type: 'string',
+              description: "The user's provided answer"
+            },
+            score: {
+              type: 'number',
+              description: "Numerical score between 0-100 based on accuracy of the user's answer"
+            }
+          },
+          required: ['question', 'correctAnswer', 'userAnswer', 'score']
+        }
+      }
+    ],
+    tool_choice: 'auto'
+  }
+}
+
 export default {
   data() {
     return {
@@ -97,7 +146,15 @@ export default {
       audioElement: null,
       mediaRecorder: null,
       audioChunks: [],
-      showDebug: false
+      showDebug: false,
+      functionAdded: false,
+      functionCallOutput: null,
+      podcastQuestionData: {
+        question: '',
+        correctAnswer: '',
+        userAnswer: '',
+        score: 0
+      }
     }
   },
   computed: {
@@ -111,11 +168,37 @@ export default {
           this.stopSession()
         }
       }
+    },
+    episodeData() {
+      return this.$store.state.globals.voiceChatEpisodeData || {}
+    },
+    hasEpisodeData() {
+      return this.episodeData && this.episodeData.summary
+    },
+    episodeSummaryText() {
+      if (!this.hasEpisodeData) return ''
+
+      const title = this.episodeData.title || 'Untitled Episode'
+      const summary = this.episodeData.summary || this.episodeData.description || ''
+      const author = this.episodeData.author || this.episodeData.podcastTitle || ''
+
+      return `Title: ${title}\n${author ? `Podcast: ${author}\n` : ''}Summary: ${summary}`
     }
   },
   methods: {
     async startSession() {
       try {
+        // Check if episode data exists before starting
+        if (!this.hasEpisodeData) {
+          this.$toast.error('Cannot start quiz: No episode data available.', { position: 'bottom-center' })
+          return
+        }
+
+        // Reset function-related state when starting a new session
+        this.functionAdded = false
+        this.functionCallOutput = null
+        this.resetPodcastAssessment()
+
         // Fetch token from our backend endpoint
         const tokenResponse = await fetch('/api/openai/token')
         const data = await tokenResponse.json()
@@ -206,7 +289,7 @@ export default {
 
         this.peerConnection = pc
         this.isSessionActive = true
-        this.$toast.success('Voice chat session started', { position: 'bottom-center', timeout: 3000 })
+        this.$toast.success('Podcast quiz session started', { position: 'bottom-center', timeout: 3000 })
 
         // Send initial system message
         this.sendClientEvent({
@@ -217,13 +300,22 @@ export default {
             content: [
               {
                 type: 'text',
-                text: `You are an assistant that helps users find and manage their audiobooks. 
-                You can engage in friendly conversation and provide information about books.
-                Keep your responses relatively concise and conversational.`
+                text: `You are a podcast knowledge quiz master who tests users on their understanding of podcast episodes they've listened to. 
+                Ask thoughtful, engaging questions about the podcast content when prompted.
+                Evaluate answers fairly and provide constructive feedback.
+                Keep your responses conversational and educational.`
               }
             ]
           }
         })
+
+        // NOTE: We no longer add the function here, it will be added when the session.created event is detected
+
+        // If we have episode data, automatically request a knowledge quiz after a short delay
+        setTimeout(() => {
+          console.log('Requesting podcast quiz')
+          this.requestPodcastQuiz()
+        }, 1500)
       } catch (error) {
         console.error('Failed to start session:', error)
         this.$toast.error(`Error starting session: ${error.message}`, { position: 'bottom-center' })
@@ -237,6 +329,11 @@ export default {
 
       dc.onmessage = (event) => {
         const message = JSON.parse(event.data)
+
+        // Store the raw event for processing
+        this.events.unshift(message)
+
+        // Also store the formatted event for display
         this.events.push({
           direction: '⬅️ RECEIVED',
           timestamp: new Date(),
@@ -244,6 +341,7 @@ export default {
         })
 
         this.handleServerMessage(message)
+        this.processEvents()
       }
     },
 
@@ -261,13 +359,130 @@ export default {
       }
     },
 
+    // New method to process events systematically like in the React implementation
+    processEvents() {
+      if (!this.events || this.events.length === 0) return
+
+      // Check for session.created event to add function (like the React useEffect)
+      if (!this.functionAdded) {
+        const sessionCreatedEvent = this.events.find((event) => event.type === 'session.created')
+
+        if (sessionCreatedEvent) {
+          console.log('Adding podcast assessment function')
+          this.addPodcastAssessmentFunction()
+          this.functionAdded = true
+        }
+      }
+
+      // Check for response.done events with function calls (similar to the React implementation)
+      const recentEvents = this.events.filter((e) => e.type === 'response.done')
+
+      if (recentEvents.length > 0) {
+        const mostRecentEvent = recentEvents[0]
+
+        if (mostRecentEvent.response?.output) {
+          mostRecentEvent.response.output.forEach((output) => {
+            if (output.type === 'function_call' && output.name === 'assess_podcast_knowledge') {
+              // Store the function call output
+              this.functionCallOutput = output
+
+              // Parse arguments if needed
+              try {
+                if (output.arguments) {
+                  const args = JSON.parse(output.arguments)
+                  this.podcastQuestionData = {
+                    question: args.question || '',
+                    correctAnswer: args.correctAnswer || '',
+                    userAnswer: args.userAnswer || '',
+                    score: args.score || 0
+                  }
+                }
+              } catch (e) {
+                console.error('Error parsing function arguments', e)
+              }
+
+              // Send a follow-up prompt after a short delay
+              setTimeout(() => {
+                this.continueAfterAssessment(output)
+              }, 500)
+            }
+          })
+        }
+      }
+    },
+
+    // Method to add the podcast assessment function
+    addPodcastAssessmentFunction() {
+      if (this.isSessionActive && this.dataChannel?.readyState === 'open') {
+        this.sendClientEvent(sessionUpdate)
+        console.log('Function added in response to session.created')
+      }
+    },
+
+    // New method to continue conversation after knowledge assessment
+    continueAfterAssessment(output) {
+      if (this.isSessionActive && this.dataChannel?.readyState === 'open') {
+        let scoreBasedInstructions = ''
+
+        // Parse the output arguments to get the score
+        try {
+          if (output.arguments) {
+            const args = JSON.parse(output.arguments)
+            const score = args.score || 0
+
+            if (score >= 80) {
+              // High score instruction
+              scoreBasedInstructions = `
+                Provide positive reinforcement highlighting what they understood well. 
+                Then offer one additional insight about the topic that adds depth.
+                Ask if they would like another question about the podcast.
+              `
+            } else if (score >= 50) {
+              // Medium score instruction
+              scoreBasedInstructions = `
+                Acknowledge what they got right, then respectfully clarify misunderstandings. 
+                Explain the concept in a clear, educational way.
+                Ask if they want to try another question on a different aspect of the podcast.
+              `
+            } else {
+              // Low score instruction
+              scoreBasedInstructions = `
+                Offer encouraging correction without being condescending. 
+                Explain the topic in a simple, straightforward way before asking 
+                if they'd like to try another question.
+              `
+            }
+          }
+        } catch (e) {
+          console.error('Error parsing function arguments for score', e)
+          // Default instruction if parsing fails
+          scoreBasedInstructions = `
+            Explain this answer in detail. Compare the user's answer with the correct answer,
+            highlighting key points. Be encouraging and educational.
+            Ask if they would like another question about the podcast.
+          `
+        }
+
+        this.sendClientEvent({
+          type: 'response.create',
+          response: {
+            instructions: scoreBasedInstructions
+          }
+        })
+      }
+    },
+
     sendClientEvent(message) {
       if (this.dataChannel?.readyState === 'open') {
+        // Store the formatted event for display
         this.events.push({
           direction: '➡️ SENT',
           timestamp: new Date(),
           data: message
         })
+
+        // Also store the raw event for processing
+        this.events.unshift(message)
 
         this.dataChannel.send(JSON.stringify(message))
       }
@@ -316,7 +531,12 @@ export default {
         // Reset state
         this.isSessionActive = false
         this.isRecording = false
-        this.$toast.success('Voice chat session ended', { position: 'bottom-center', timeout: 3000 })
+        this.functionAdded = false
+        this.functionCallOutput = null
+        this.resetPodcastAssessment()
+        this.transcript = ''
+        this.responseText = ''
+        this.$toast.success('Podcast quiz session ended', { position: 'bottom-center', timeout: 3000 })
       }
     },
 
@@ -331,6 +551,64 @@ export default {
         sanitizedData.audio_buffer = `[Array(${sanitizedData.audio_buffer.length}) truncated]`
       }
       return JSON.stringify(sanitizedData, null, 2)
+    },
+
+    requestPodcastQuiz() {
+      if (!this.isSessionActive || !this.dataChannel?.readyState === 'open') {
+        this.$toast.error('Session not active or connection not established', { position: 'bottom-center' })
+        return
+      }
+
+      if (!this.hasEpisodeData) {
+        this.$toast.error('Cannot start quiz: No episode data available.', { position: 'bottom-center' })
+        return
+      }
+
+      // Clear any previous assessment
+      this.resetPodcastAssessment()
+
+      // Get episode data
+      const title = this.episodeData.title || 'Untitled Episode'
+      const podcastName = this.episodeData.podcastTitle || this.episodeData.author || ''
+      const summary = this.episodeData.summary || ''
+
+      // Construct the prompt
+      let promptText = `I would like to test my knowledge about the podcast episode "${title}" I just listened to. Please ask me ONE clear question about an important concept or insight from this episode.`
+
+      // Add episode information as context for the LLM
+      let episodeContext = `\n\nEpisode Information:\nTitle: ${title}\n`
+      if (podcastName) episodeContext += `Podcast: ${podcastName}\n`
+      episodeContext += `Summary: ${summary}\n`
+
+      // Add instructions for the function call
+      promptText += episodeContext + '\n\nAfter I respond, use the assess_podcast_knowledge function to evaluate my answer. Focus on meaningful concepts rather than trivial details.'
+
+      // Send a prompt to request a podcast knowledge quiz
+      this.sendClientEvent({
+        type: 'conversation.item.create',
+        item: {
+          type: 'message',
+          role: 'user',
+          content: [
+            {
+              type: 'input_text',
+              text: promptText
+            }
+          ]
+        }
+      })
+
+      this.$toast.info('Podcast knowledge test started', { position: 'bottom-center', timeout: 2000 })
+    },
+
+    resetPodcastAssessment() {
+      this.functionCallOutput = null
+      this.podcastQuestionData = {
+        question: '',
+        correctAnswer: '',
+        userAnswer: '',
+        score: 0
+      }
     }
   },
   beforeDestroy() {

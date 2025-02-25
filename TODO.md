@@ -39,7 +39,9 @@
 - [ ] tutorial intro
 
 ## audio Q&A
-
+- [ ] only ask 1 question at a time about the most important segment
+- [ ] placeholders for voice, tone
+- [ ] visualization
 - [ ] share the results
 
 # fixes
@@ -74,7 +76,7 @@
 # highly optional todos
 
 - [ ] rename project to something e.g. audiobrain
-- [ ] use openai for transcription
+- [X] use openai for transcription
 - [ ] display suggested questions to ask in the knowledge base
 - [ ] change chromadb credentials
 - [ ] update table name of summaries. inconsistent naming pattern
