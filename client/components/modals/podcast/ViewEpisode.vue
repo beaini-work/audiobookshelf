@@ -85,7 +85,6 @@
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-6">
           <p class="text-sm">{{ $strings.LabelSummary }}</p>
           <div class="flex flex-wrap gap-2">
-            <ui-btn v-if="!hasSummary && !isSummarizing && !isSummaryQueued && hasTranscript" @click="generateSummary" icon="summarize" :loading="isSummarizing"> Generate Summary </ui-btn>
             <ui-btn v-if="hasSummary" @click="deleteSummary" variant="danger" icon="delete" :loading="isDeletingSummary"> Delete Summary </ui-btn>
           </div>
         </div>
@@ -107,10 +106,16 @@
           <p>Transcript Required</p>
           <p class="text-xs text-gray-400 mt-2">Generate a transcript first to create a summary</p>
         </div>
-        <div v-else class="text-center py-8">
-          <span class="material-symbols text-4xl mb-2">summarize</span>
-          <p>No Summary Available</p>
-          <p class="text-xs text-gray-400 mt-2">Click "Generate Summary" to create one</p>
+        <div v-else class="flex flex-col items-center justify-center h-full py-10">
+          <div class="max-w-lg text-center">
+            <div class="rounded-lg p-6 mb-4">
+              <span class="material-symbols text-5xl text-primary mb-4">summarize</span>
+              <h3 class="text-xl font-medium mb-2">No Summary Available</h3>
+              <p class="text-gray-300 mb-6">Generate a summary to quickly understand the key points of this episode.</p>
+
+              <ui-btn @click="generateSummary" icon="summarize" :loading="isSummarizing" size="lg" class="w-full justify-center"> Generate Summary </ui-btn>
+            </div>
+          </div>
         </div>
       </div>
 
