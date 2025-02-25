@@ -42,9 +42,6 @@
         <div v-if="hasTranscript" class="transcript-container">
           <div v-if="groupedTranscript" class="space-y-3">
             <div v-for="(group, index) in groupedTranscript" :key="index" class="transcript-group">
-              <div v-if="group.showTimestamp" class="timestamp-marker py-2">
-                <span class="text-xs font-medium bg-black-300/30 px-2 py-1 rounded-md">{{ formatTime(group.timestamp) }}</span>
-              </div>
               <p class="transcript-text">{{ group.text }}</p>
             </div>
           </div>
@@ -516,15 +513,6 @@ export default {
   @apply leading-relaxed;
 }
 
-.timestamp-marker {
-  @apply py-2;
-}
-
-/* Fix timestamp display */
-.timestamp-marker span {
-  color: #a3b3ff; /* Light blue color that works well with dark background */
-}
-
 /* Markdown styles */
 .summary-content ::v-deep {
   @apply text-gray-100;
@@ -542,9 +530,11 @@ export default {
 .summary-content ::v-deep h1 {
   @apply text-2xl;
 }
+
 .summary-content ::v-deep h2 {
   @apply text-xl;
 }
+
 .summary-content ::v-deep h3 {
   @apply text-lg;
 }
