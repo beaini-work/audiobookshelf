@@ -241,6 +241,17 @@ class PodcastEpisode extends Model {
 
     return json
   }
+
+  static async findAllWithTranscriptionOperation() {
+    const { Op } = require('sequelize');
+    return this.findAll({
+      where: {
+        transcriptionOperation: {
+          [Op.not]: null
+        }
+      }
+    });
+  }
 }
 
 module.exports = PodcastEpisode

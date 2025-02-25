@@ -4,9 +4,9 @@
       <!-- Current caption text -->
       <div ref="captionContainer" class="h-24 overflow-y-auto">
         <div v-if="currentSegment" class="text-center">
-          <p :class="captionSizeClass">{{ currentSegment.transcript }}</p>
+          <p :class="captionSizeClass">{{ currentSegment.text }}</p>
         </div>
-        <div v-else-if="!transcript?.length" class="text-white text-sm text-center">No captions available</div>
+        <div v-else-if="!hasSegments" class="text-white text-sm text-center">No captions available</div>
       </div>
     </div>
   </div>
@@ -16,8 +16,8 @@
 export default {
   props: {
     transcript: {
-      type: Array,
-      default: () => []
+      type: Object,
+      default: () => ({ results: [], segments: [] })
     },
     currentTime: {
       type: Number,
@@ -37,6 +37,9 @@ export default {
         3: 'text-3xl'
       }
       return `text-white ${sizes[this.captionSize] || sizes[2]}`
+    },
+    hasSegments() {
+      return this.transcript?.segments?.length > 0
     }
   },
   data() {
@@ -54,26 +57,17 @@ export default {
     }
   },
   methods: {
-    getWordTime(word) {
-      if (!word?.startTime?.seconds) return 0
-      const seconds = word.startTime.seconds
-      if (typeof seconds === 'object' && 'low' in seconds && 'high' in seconds) {
-        return seconds.low + seconds.high * Math.pow(2, 32)
-      }
-      return parseFloat(seconds) || 0
-    },
     updateCurrentSegment(currentTime) {
-      if (!this.transcript?.length) {
+      if (!this.hasSegments) {
         this.currentSegment = null
         return
       }
 
-      for (let i = 0; i < this.transcript.length; i++) {
-        const segment = this.transcript[i]
-        if (!segment.words?.length) continue
-
-        const segmentStart = this.getWordTime(segment.words[0])
-        const segmentEnd = this.getWordTime(segment.words[segment.words.length - 1])
+      // Find the segment that contains the current playback time
+      for (let i = 0; i < this.transcript.segments.length; i++) {
+        const segment = this.transcript.segments[i]
+        const segmentStart = segment.start || 0
+        const segmentEnd = segment.end || 0
 
         if (currentTime >= segmentStart && currentTime <= segmentEnd) {
           this.currentSegment = segment

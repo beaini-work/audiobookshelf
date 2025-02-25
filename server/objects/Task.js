@@ -129,5 +129,18 @@ class Task {
     this.isFinished = true
     this.finishedAt = Date.now()
   }
+
+  /**
+   * Update task progress percentage
+   * 
+   * @param {number} percentage - Progress percentage (0-100)
+   */
+  setProgress(percentage) {
+    // Store progress as part of the task data
+    if (!this.data) {
+      this.data = {};
+    }
+    this.data.progress = Math.min(100, Math.max(0, percentage));
+  }
 }
 module.exports = Task

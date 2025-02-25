@@ -228,7 +228,7 @@ export default {
       return this.$store.getters['user/getUserSetting']('playbackRateIncrementDecrement')
     },
     hasTranscript() {
-      return this.transcript && this.transcript.length > 0
+      return this.transcript && (Array.isArray(this.transcript) ? this.transcript.length > 0 : this.transcript.segments && this.transcript.segments.length > 0)
     }
   },
   methods: {

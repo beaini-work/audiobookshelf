@@ -17,9 +17,12 @@
       </div>
       <p dir="auto" class="text-lg font-semibold mb-6">{{ title }}</p>
 
-      <div v-if="transcript" class="whitespace-pre-wrap font-mono text-sm">
-        <div v-for="(segment, index) in transcript" :key="index" class="mb-4">
-          <div class="text-gray-100">{{ segment.transcript }}</div>
+      <div v-if="formattedTranscript" class="whitespace-pre-wrap font-mono text-sm">
+        <div v-for="(segment, index) in formattedTranscript.segments" :key="index" class="mb-4">
+          <div class="flex items-start">
+            <div class="text-gray-400 mr-2 whitespace-nowrap">{{ formatTime(segment.start) }}</div>
+            <div class="text-gray-100">{{ segment.text }}</div>
+          </div>
         </div>
       </div>
       <div v-else class="text-center text-gray-300">
@@ -37,18 +40,35 @@ export default {
     }
   },
   methods: {
-    formatTime(timeObj) {
-      if (!timeObj) return '0:00'
-      const totalSeconds = Number(timeObj.seconds) + timeObj.nanos / 1000000000
+    formatTime(seconds) {
+      if (seconds === undefined || seconds === null) return '0:00'
+
+      // Convert to number if it's a string
+      const totalSeconds = Number(seconds)
       const minutes = Math.floor(totalSeconds / 60)
-      const seconds = Math.floor(totalSeconds % 60)
-      return `${minutes}:${seconds.toString().padStart(2, '0')}`
+      const secs = Math.floor(totalSeconds % 60)
+      return `${minutes}:${secs.toString().padStart(2, '0')}`
     },
-    seekToTime(timeObj) {
-      if (!timeObj) return
-      const totalSeconds = Number(timeObj.seconds) + timeObj.nanos / 1000000000
+    seekToTime(seconds) {
+      if (seconds === undefined || seconds === null) return
+
       // Emit event to seek player to this time
-      this.$root.$emit('player-seek', totalSeconds)
+      this.$root.$emit('player-seek', Number(seconds))
+    },
+    extractSeconds(timeObj) {
+      if (!timeObj) return 0
+      if (typeof timeObj === 'number') return timeObj
+
+      // Handle old GCP format with seconds.low/high and nanos
+      if (timeObj.seconds) {
+        const seconds = timeObj.seconds
+        if (typeof seconds === 'object' && 'low' in seconds && 'high' in seconds) {
+          return seconds.low + seconds.high * Math.pow(2, 32)
+        }
+        return Number(seconds) + (timeObj.nanos || 0) / 1e9
+      }
+
+      return 0
     }
   },
   computed: {
@@ -81,24 +101,34 @@ export default {
     podcastAuthor() {
       return this.mediaMetadata.author
     },
-    transcript() {
+    formattedTranscript() {
       if (!this.episode.transcript) return null
-      // If transcript is a string (old format), try to parse it
+
+      // Handle legacy string format (unlikely but possible)
       if (typeof this.episode.transcript === 'string') {
         try {
           return JSON.parse(this.episode.transcript)
         } catch (error) {
           console.error('Failed to parse transcript JSON', error)
-          // If parsing fails, assume it's old text format and convert to new format
-          return [
-            {
-              transcript: this.episode.transcript,
-              words: []
-            }
-          ]
+          return null
         }
       }
-      // Already in new format
+
+      // If it's an array (old format), convert to new format
+      if (Array.isArray(this.episode.transcript)) {
+        const segments = this.episode.transcript.map((result) => ({
+          text: result.transcript,
+          start: result.words && result.words.length > 0 ? this.extractSeconds(result.words[0].startTime) : 0,
+          end: result.words && result.words.length > 0 ? this.extractSeconds(result.words[result.words.length - 1].endTime) : 0
+        }))
+
+        return {
+          results: this.episode.transcript,
+          segments: segments
+        }
+      }
+
+      // Already in new format with results and segments arrays
       return this.episode.transcript
     },
     bookCoverAspectRatio() {

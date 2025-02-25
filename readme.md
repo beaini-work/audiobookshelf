@@ -469,6 +469,8 @@ Audiobookshelf supports configuration through environment variables. You can set
 | OPENAI_MODEL | OpenAI model to use | gpt-4o-mini |
 | OPENAI_TEMPERATURE | Temperature parameter for OpenAI | 0.3 |
 
+> **Note:** For transcription of large audio files (>25MB), ffmpeg must be installed on the system. The application uses ffmpeg to split large audio files into smaller chunks for processing with OpenAI's Whisper API.
+
 #### ChromaDB Configuration (for vector storage)
 
 | Variable | Description | Default |

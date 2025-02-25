@@ -224,7 +224,24 @@ export default {
       return this.$store.getters['libraries/getBookCoverAspectRatio']
     },
     hasTranscript() {
-      return this.episode.transcript != null
+      if (!this.episode.transcript) return false
+
+      // Check for new format (object with segments array)
+      if (typeof this.episode.transcript === 'object' && !Array.isArray(this.episode.transcript)) {
+        return this.episode.transcript.segments && this.episode.transcript.segments.length > 0
+      }
+
+      // Check for old format (array of results)
+      if (Array.isArray(this.episode.transcript)) {
+        return this.episode.transcript.length > 0
+      }
+
+      // String format (deprecated but check anyway)
+      if (typeof this.episode.transcript === 'string') {
+        return this.episode.transcript.trim().length > 0
+      }
+
+      return false
     },
     transcriptionsEnabled() {
       return this.$store.state.serverSettings?.transcriptionsEnabled ?? false
