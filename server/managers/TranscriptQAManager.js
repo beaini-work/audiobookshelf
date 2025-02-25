@@ -117,16 +117,32 @@ Response:`);
         context
       });
 
-      // Transform the response to match our API format
+      // Transform the response to match our API format with enhanced metadata
       return {
         answer: response.answer,
-        sources: response.relevantSegments.map(segment => ({
-          episodeId: results.find(r => 
-            r.metadata.episodeTitle === segment.episodeTitle)?.metadata.episodeId,
-          podcastId: results.find(r => 
-            r.metadata.podcastTitle === segment.podcastTitle)?.metadata.podcastId,
-          timestamp: segment.timestamp
-        }))
+        sources: response.relevantSegments.map(segment => {
+          // Find the corresponding result to get metadata
+          const matchingResult = results.find(r => 
+            r.metadata.episodeTitle === segment.episodeTitle && 
+            r.metadata.podcastTitle === segment.podcastTitle);
+          
+          // Format timestamp properly or handle invalid formats
+          let formattedTimestamp = segment.timestamp;
+          if (!formattedTimestamp || formattedTimestamp === '[NaN:NaN]') {
+            formattedTimestamp = matchingResult ? 
+              this.formatTimestamp(matchingResult.metadata.startTime) : 
+              '[00:00]';
+          }
+          
+          return {
+            episodeId: matchingResult?.metadata.episodeId,
+            podcastId: matchingResult?.metadata.podcastId,
+            timestamp: formattedTimestamp,
+            // Add these new fields for client-side use
+            podcastTitle: matchingResult?.metadata.podcastTitle || segment.podcastTitle,
+            episodeTitle: matchingResult?.metadata.episodeTitle || segment.episodeTitle
+          };
+        })
       };
 
     } catch (error) {

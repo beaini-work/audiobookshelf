@@ -67,15 +67,26 @@
         <h3 class="text-lg font-semibold mb-3">Sources</h3>
         <div v-if="searchResults.sources && searchResults.sources.length" class="space-y-4">
           <div v-for="(source, index) in searchResults.sources" :key="index" class="bg-gray-800 p-4 rounded-lg">
-            <div class="flex items-start justify-between mb-2">
-              <div>
-                <h4 class="font-medium">{{ getPodcastTitle(source.podcastId) }}</h4>
-                <p class="text-sm text-gray-400">{{ getEpisodeTitle(source.episodeId) }}</p>
+            <div class="flex items-start">
+              <!-- Episode cover image -->
+              <div class="flex-shrink-0 mr-4">
+                <img v-if="source.coverPath" :src="'/api/items/path/' + source.coverPath" :alt="source.episodeTitle || 'Episode cover'" class="w-16 h-16 rounded-md object-cover" />
+                <div v-else class="w-16 h-16 rounded-md bg-gray-700 flex items-center justify-center">
+                  <span class="material-symbols text-gray-500">podcasts</span>
+                </div>
               </div>
-              <button class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1 rounded-md flex items-center" @click="playEpisodeAtTimestamp(source.episodeId, source.timestamp)">
-                <span class="material-symbols fill text-sm mr-1">play_arrow</span>
-                {{ source.timestamp }}
-              </button>
+
+              <!-- Episode info and play button -->
+              <div class="flex-grow flex items-start justify-between">
+                <div>
+                  <h4 class="font-medium">{{ source.episodeTitle || getEpisodeTitle(source.episodeId) }}</h4>
+                  <p class="text-sm text-gray-400">{{ source.podcastTitle || getPodcastTitle(source.podcastId) }}</p>
+                </div>
+                <button class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1 rounded-md flex items-center" @click="playEpisodeAtTimestamp(source.episodeId, source.timestamp)">
+                  <span class="material-symbols fill text-sm mr-1">play_arrow</span>
+                  {{ source.timestamp }}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -157,32 +168,80 @@ export default {
       this.performSearch()
     },
     getPodcastTitle(podcastId) {
-      // Get podcast title from store or use a placeholder
-      const libraryItem = this.$store.getters['getLibraryItemById'](podcastId)
-      return libraryItem?.media?.metadata?.title || 'Unknown Podcast'
+      // Try both namespaced and non-namespaced paths to find the podcast
+      // First check if we can access it directly as a library item
+      const libraryItem = this.$store.getters['libraries/getLibraryItemById']?.(podcastId) || this.$store.getters['getLibraryItemById']?.(podcastId)
+
+      if (libraryItem?.media?.metadata?.title) {
+        return libraryItem.media.metadata.title
+      }
+
+      // Check in the current library items
+      const libraryItems = this.$store.getters['libraries/getLibraryItems'] || []
+      const foundItem = libraryItems.find((item) => item.id === podcastId)
+      if (foundItem?.media?.metadata?.title) {
+        return foundItem.media.metadata.title
+      }
+
+      return `Podcast (${podcastId.slice(0, 6)}...)`
     },
     getEpisodeTitle(episodeId) {
-      // Find the episode title across all podcasts
-      // This is simplified and would need to be improved for production
-      const podcasts = this.$store.getters['getAllPodcasts'] || []
-      for (const podcast of podcasts) {
-        const episode = podcast.media.episodes.find((ep) => ep.id === episodeId)
-        if (episode) return episode.title
+      // Try to find episode in various store locations
+
+      // Check in all libraries first
+      const libraries = this.$store.getters['user/getUserLibraries'] || []
+      for (const library of libraries) {
+        const libraryItems = this.$store.getters['libraries/getLibraryItems'] || []
+        for (const item of libraryItems) {
+          if (item.media && item.media.episodes) {
+            const episode = item.media.episodes.find((ep) => ep.id === episodeId)
+            if (episode?.title) return episode.title
+          }
+        }
       }
-      return 'Unknown Episode'
+
+      // Check in podcast items
+      const podcasts = this.$store.getters['libraries/getAllPodcasts'] || this.$store.getters['getAllPodcasts'] || []
+
+      for (const podcast of podcasts) {
+        if (podcast.media && podcast.media.episodes) {
+          const episode = podcast.media.episodes.find((ep) => ep.id === episodeId)
+          if (episode?.title) return episode.title
+        }
+      }
+
+      return `Episode (${episodeId.slice(0, 6)}...)`
     },
     playEpisodeAtTimestamp(episodeId, timestamp) {
       // Find the podcast item and episode
-      const podcasts = this.$store.getters['getAllPodcasts'] || []
+      const podcasts = this.$store.getters['libraries/getAllPodcasts'] || this.$store.getters['getAllPodcasts'] || []
       let foundEpisode = null
       let foundPodcast = null
 
+      // Try to find the episode in all podcasts
       for (const podcast of podcasts) {
-        const episode = podcast.media.episodes.find((ep) => ep.id === episodeId)
-        if (episode) {
-          foundEpisode = episode
-          foundPodcast = podcast
-          break
+        if (podcast.media && podcast.media.episodes) {
+          const episode = podcast.media.episodes.find((ep) => ep.id === episodeId)
+          if (episode) {
+            foundEpisode = episode
+            foundPodcast = podcast
+            break
+          }
+        }
+      }
+
+      // If not found in podcasts, try searching all library items
+      if (!foundEpisode) {
+        const libraryItems = this.$store.getters['libraries/getLibraryItems'] || []
+        for (const item of libraryItems) {
+          if (item.media && item.media.episodes) {
+            const episode = item.media.episodes.find((ep) => ep.id === episodeId)
+            if (episode) {
+              foundEpisode = episode
+              foundPodcast = item
+              break
+            }
+          }
         }
       }
 
@@ -192,11 +251,25 @@ export default {
       }
 
       // Convert timestamp [HH:MM] to seconds
-      // Remove brackets and split by colon
-      const timeStr = timestamp.replace(/[\[\]]/g, '').split(':')
-      const hours = parseInt(timeStr[0]) || 0
-      const minutes = parseInt(timeStr[1]) || 0
-      const startTime = hours * 3600 + minutes * 60
+      let startTime = 0
+      try {
+        // Handle invalid timestamp format
+        if (timestamp === '[NaN:NaN]' || !timestamp.includes(':')) {
+          this.$toast.info(`Playing "${foundEpisode.title}" from the beginning`)
+        } else {
+          // Remove brackets and split by colon
+          const timeStr = timestamp.replace(/[\[\]]/g, '').split(':')
+          const hours = parseInt(timeStr[0]) || 0
+          const minutes = parseInt(timeStr[1]) || 0
+          startTime = hours * 3600 + minutes * 60
+          this.$toast.success(`Playing "${foundEpisode.title}" at ${hours}h${minutes}m`)
+        }
+      } catch (e) {
+        console.error('Error parsing timestamp:', e)
+        this.$toast.info(`Playing "${foundEpisode.title}" from the beginning`)
+        // Default to beginning of episode
+        startTime = 0
+      }
 
       // Prepare queue item
       const queueItem = {
@@ -208,7 +281,6 @@ export default {
       // Play the episode
       this.$store.commit('setPlaybackRate', 1)
       this.$store.dispatch('playQueueItems', [queueItem])
-      this.$toast.success(`Playing "${foundEpisode.title}" at ${timestamp}`)
     }
   },
   mounted() {

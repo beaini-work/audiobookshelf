@@ -53,6 +53,9 @@ const validateLibraryAccess = async (req, res, next) => {
  * @apiSuccess {String} sources.episodeId Episode ID
  * @apiSuccess {String} sources.podcastId Podcast ID
  * @apiSuccess {String} sources.timestamp Timestamp in HH:MM format
+ * @apiSuccess {String} sources.podcastTitle Title of the podcast
+ * @apiSuccess {String} sources.episodeTitle Title of the episode
+ * @apiSuccess {String} sources.coverPath Path to episode or podcast cover image
  */
 router.post('/query', validateLibraryAccess, async (req, res) => {
   try {
@@ -62,7 +65,52 @@ router.post('/query', validateLibraryAccess, async (req, res) => {
       return res.status(400).json({ error: 'Query parameter is required and must be a string' });
     }
 
+    // Get query results
     const result = await TranscriptQAManager.query(query, libraryIds);
+    
+    // Now enhance the response with episode cover images
+    if (result.sources && result.sources.length > 0) {
+      // Get unique podcast IDs
+      const podcastIds = [...new Set(result.sources.map(source => source.podcastId))];
+      
+      // Fetch podcast data (containing episode information)
+      const podcastsData = {};
+      await Promise.all(podcastIds.map(async (podcastId) => {
+        try {
+          const libraryItem = await Database.libraryItemModel.getExpandedById(podcastId);
+          if (libraryItem && libraryItem.isPodcast) {
+            podcastsData[podcastId] = libraryItem;
+          }
+        } catch (err) {
+          Logger.error('[TranscriptRoutes] Error fetching podcast data', err);
+        }
+      }));
+      
+      // Enhance each source with cover image URL
+      result.sources = result.sources.map(source => {
+        const podcast = podcastsData[source.podcastId];
+        Logger.debug('[TranscriptRoutes] podcast', podcast);
+        let coverPath = null;
+        
+        if (podcast) {
+          // Try to get episode-specific cover image
+          const episode = podcast.media?.podcastEpisodes?.find(ep => ep.id === source.episodeId);
+          
+          if (episode?.coverPath) {
+            // Use episode-specific cover if available
+            coverPath = episode.coverPath;
+          } else if (podcast.coverPath) {
+            // Fall back to podcast cover
+            coverPath = podcast.coverPath;
+          }
+        }
+        
+        return {
+          ...source,
+          coverPath
+        };
+      });
+    }
     
     res.json(result);
   } catch (error) {
