@@ -8,28 +8,27 @@
 
         <!-- Search interface -->
         <div class="w-full">
-          <div class="relative w-full">
-            <input v-model="searchQuery" type="text" class="w-full px-4 py-3 pr-16 rounded-lg bg-black bg-opacity-30 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white text-base" placeholder="What would you like to know from your podcasts?" @keyup.enter="performSearch" />
-            <button class="absolute right-1 top-1/2 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700 text-white rounded-md px-3 py-1.5 text-sm font-medium" @click="performSearch">
-              <span class="material-symbols fill">search</span>
+          <!-- Enhanced search input with better contrast and accessibility -->
+          <div class="relative w-full search-container">
+            <input v-model="searchQuery" type="text" class="w-full px-5 py-4 pr-16 rounded-lg border border-gray-600 bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 text-white text-base transition-all duration-200" placeholder="What would you like to know from your podcasts?" @keyup.enter="performSearch" aria-label="Search podcasts" />
+
+            <!-- Improved search button with better visual design and feedback -->
+            <button
+              class="search-button absolute right-3 top-1/2 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-500 active:bg-blue-400 text-white rounded-full w-11 h-11 flex items-center justify-center shadow-md transition-all duration-200 focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50"
+              @click="performSearch"
+              :class="{ 'animate-pulse': isSearching }"
+              :disabled="isSearching"
+              aria-label="Search podcasts"
+            >
+              <span class="material-symbols" style="font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24; font-size: 24px">search</span>
             </button>
           </div>
 
-          <!-- Library selector -->
-          <div class="mt-3 flex flex-wrap gap-2">
-            <div class="text-gray-300 text-sm mt-1">Libraries:</div>
-            <div class="flex flex-wrap gap-2">
-              <button v-for="library in userLibraries" :key="library.id" class="px-3 py-1 rounded text-sm" :class="selectedLibraryIds.includes(library.id) ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'" @click="toggleLibrary(library.id)">
-                {{ library.name }}
-              </button>
-            </div>
-          </div>
-
-          <!-- Search examples -->
-          <div class="mt-4">
-            <p class="text-gray-400 text-sm mb-1">Try asking:</p>
-            <div class="flex flex-wrap gap-2">
-              <button v-for="(example, i) in searchExamples" :key="i" class="px-3 py-1 bg-gray-800 hover:bg-gray-700 rounded-full text-sm text-gray-300" @click="useSearchExample(example)">
+          <!-- Search examples (more prominent) -->
+          <div class="mt-8">
+            <p class="text-gray-300 text-sm font-medium mb-3">Try asking:</p>
+            <div class="flex flex-wrap gap-3">
+              <button v-for="(example, i) in searchExamples" :key="i" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-base text-gray-200 transition-colors duration-200 hover:shadow-md" @click="useSearchExample(example)" :aria-label="`Search for: ${example}`">
                 {{ example }}
               </button>
             </div>
@@ -42,9 +41,20 @@
     <div class="flex-grow overflow-y-auto content-container">
       <div class="max-w-5xl mx-auto px-8 py-6">
         <!-- Loading state -->
-        <div v-if="isSearching" class="flex flex-col items-center justify-center py-12">
-          <widgets-loading-spinner size="la-2x" />
-          <p class="mt-4 text-gray-300">Searching your podcasts...</p>
+        <div v-if="isSearching" class="search-loading-container bg-gray-900 rounded-lg flex flex-col items-center justify-center">
+          <!-- Query visualization (just a subtle pulse around the query) -->
+          <div class="query-pulse-container my-8">
+            <div class="bg-gray-800 rounded-lg py-3 px-5 inline-block max-w-full query-pulse">
+              <p class="text-blue-400 font-medium text-lg truncate">{{ searchQuery }}</p>
+            </div>
+          </div>
+
+          <!-- Enhanced animated loading visualizer -->
+          <div class="podcast-visualizer mb-10">
+            <div class="visualizer-container">
+              <div class="bar" v-for="i in 12" :key="i"></div>
+            </div>
+          </div>
         </div>
 
         <!-- Empty state after search -->
@@ -128,7 +138,9 @@ export default {
       searchError: null,
       selectedLibraryIds: [],
       searchExamples: ['What are the key insights about AI safety?', 'Summarize the discussion about climate change', 'What did they say about meditation benefits?'],
-      expandedTranscripts: {} // Track which transcripts are expanded by their index
+      expandedTranscripts: {}, // Track which transcripts are expanded by their index
+      searchPhase: 0, // Track the current phase of searching
+      searchPhaseInterval: null // Interval for updating search phases
     }
   },
   computed: {
@@ -140,17 +152,19 @@ export default {
     }
   },
   methods: {
-    toggleLibrary(libraryId) {
-      if (this.selectedLibraryIds.includes(libraryId)) {
-        this.selectedLibraryIds = this.selectedLibraryIds.filter((id) => id !== libraryId)
-      } else {
-        this.selectedLibraryIds.push(libraryId)
-      }
-    },
     async performSearch() {
       if (!this.searchQuery.trim()) return
-      if (!this.selectedLibraryIds.length) {
-        this.$toast.error('Please select at least one library to search in')
+
+      // Safely get library IDs with a fallback to prevent "map of undefined" error
+      const librariesToSearch = (this.userLibraries || []).map((lib) => lib.id)
+
+      // If current library ID exists, make sure it's included
+      if (this.libraryId && !librariesToSearch.includes(this.libraryId)) {
+        librariesToSearch.push(this.libraryId)
+      }
+
+      if (!librariesToSearch.length) {
+        this.$toast.error('No libraries available to search')
         return
       }
 
@@ -160,10 +174,14 @@ export default {
       this.searchError = null
       this.expandedTranscripts = {} // Reset expanded transcripts
 
+      // Reset and start the search phase animation
+      this.searchPhase = 0
+      this.startSearchPhaseAnimation()
+
       try {
         const response = await this.$axios.$post('/api/transcripts/query', {
           query: this.searchQuery,
-          libraryIds: this.selectedLibraryIds
+          libraryIds: librariesToSearch
         })
 
         // Ensure response has the expected structure
@@ -176,7 +194,39 @@ export default {
         this.searchError = error.response?.data?.error || 'Failed to process your query'
         this.$toast.error(this.searchError)
       } finally {
-        this.isSearching = false
+        // Make sure we reach the final phase before ending
+        if (this.searchPhase < 3) {
+          this.searchPhase = 3
+          // Allow the final phase to show briefly before hiding the loading state
+          setTimeout(() => {
+            this.isSearching = false
+            this.clearSearchPhaseAnimation()
+          }, 500)
+        } else {
+          this.isSearching = false
+          this.clearSearchPhaseAnimation()
+        }
+      }
+    },
+
+    // New methods for managing search phase animation
+    startSearchPhaseAnimation() {
+      this.clearSearchPhaseAnimation() // Clear any existing interval
+
+      // Create realistic timing for the search phases
+      this.searchPhaseInterval = setInterval(() => {
+        if (this.searchPhase < 3) {
+          this.searchPhase++
+        } else {
+          clearInterval(this.searchPhaseInterval)
+        }
+      }, 1200) // Advance phase roughly every 1.2 seconds
+    },
+
+    clearSearchPhaseAnimation() {
+      if (this.searchPhaseInterval) {
+        clearInterval(this.searchPhaseInterval)
+        this.searchPhaseInterval = null
       }
     },
     useSearchExample(example) {
@@ -304,10 +354,14 @@ export default {
     }
   },
   mounted() {
-    // Initialize with current library
+    // Initialize with current library if available
     if (this.libraryId) {
       this.selectedLibraryIds = [this.libraryId]
     }
+  },
+  beforeDestroy() {
+    // Clean up the interval when component is destroyed
+    this.clearSearchPhaseAnimation()
   }
 }
 </script>
@@ -336,6 +390,17 @@ export default {
   font-variation-settings: 'FILL' 1, 'wght' 600, 'GRAD' 0, 'opsz' 40;
   text-shadow: 0 0 8px rgba(66, 153, 225, 0.3);
   cursor: pointer;
+}
+
+/* Search container enhancements */
+.search-container {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.search-container:focus-within {
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+  transform: translateY(-1px);
 }
 
 /* Animation styles for the transcript with accordion effect */
@@ -399,5 +464,249 @@ export default {
 .content-container::-webkit-scrollbar-thumb {
   background-color: #4a5568;
   border-radius: 4px;
+}
+
+/* Enhanced search button styles */
+.search-button {
+  overflow: hidden;
+  transform-origin: center;
+}
+
+.search-button:hover {
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.search-button:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.search-button::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  transform: scale(0);
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.search-button:hover::before {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.search-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Add keyframe animation for button when loading */
+@keyframes search-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+.search-button.animate-pulse {
+  animation: search-pulse 1.5s infinite;
+}
+
+/* Loading state enhancements */
+.search-loading-container {
+  min-height: 350px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  padding: 3rem 2rem;
+}
+
+/* Query pulse effect */
+.query-pulse {
+  position: relative;
+  box-shadow: 0 0 0 rgba(66, 153, 225, 0.4);
+  animation: queryPulse 2s infinite;
+}
+
+@keyframes queryPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(66, 153, 225, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(66, 153, 225, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(66, 153, 225, 0);
+  }
+}
+
+/* Modern audio visualizer */
+.podcast-visualizer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 120px;
+  width: 100%;
+}
+
+.visualizer-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 100%;
+  width: 240px;
+}
+
+.visualizer-container .bar {
+  background-color: rgba(66, 153, 225, 0.7);
+  border-radius: 15px;
+  width: 4px;
+  height: 100%;
+  transform: scaleY(0.15);
+  transform-origin: center;
+}
+
+.visualizer-container .bar:nth-child(1) {
+  animation: barScale 1.1s infinite ease-in-out alternate;
+  animation-delay: 0s;
+}
+.visualizer-container .bar:nth-child(2) {
+  animation: barScale 1.4s infinite ease-in-out alternate;
+  animation-delay: 0.1s;
+}
+.visualizer-container .bar:nth-child(3) {
+  animation: barScale 1.6s infinite ease-in-out alternate;
+  animation-delay: 0.2s;
+}
+.visualizer-container .bar:nth-child(4) {
+  animation: barScale 1.2s infinite ease-in-out alternate;
+  animation-delay: 0.3s;
+}
+.visualizer-container .bar:nth-child(5) {
+  animation: barScale 1s infinite ease-in-out alternate;
+  animation-delay: 0.4s;
+}
+.visualizer-container .bar:nth-child(6) {
+  animation: barScale 1.7s infinite ease-in-out alternate;
+  animation-delay: 0.5s;
+}
+.visualizer-container .bar:nth-child(7) {
+  animation: barScale 1.5s infinite ease-in-out alternate;
+  animation-delay: 0.6s;
+}
+.visualizer-container .bar:nth-child(8) {
+  animation: barScale 1.3s infinite ease-in-out alternate;
+  animation-delay: 0.7s;
+}
+.visualizer-container .bar:nth-child(9) {
+  animation: barScale 1.1s infinite ease-in-out alternate;
+  animation-delay: 0.8s;
+}
+.visualizer-container .bar:nth-child(10) {
+  animation: barScale 1.4s infinite ease-in-out alternate;
+  animation-delay: 0.9s;
+}
+.visualizer-container .bar:nth-child(11) {
+  animation: barScale 1.2s infinite ease-in-out alternate;
+  animation-delay: 1s;
+}
+.visualizer-container .bar:nth-child(12) {
+  animation: barScale 1.6s infinite ease-in-out alternate;
+  animation-delay: 1.1s;
+}
+
+@keyframes barScale {
+  0% {
+    transform: scaleY(0.15);
+    background-color: rgba(66, 153, 225, 0.5);
+  }
+  100% {
+    transform: scaleY(0.7);
+    background-color: rgba(99, 179, 237, 0.9);
+  }
+}
+
+/* Search progress bar animation */
+.search-progress-bar {
+  transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.search-progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -50%;
+  bottom: 0;
+  left: -50%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Progress dots */
+.progress-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #2d3748;
+  transition: all 0.4s ease;
+  position: relative;
+}
+
+.progress-dot.active {
+  background-color: #4299e1;
+  transform: scale(1.4);
+}
+
+.progress-dot.active::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 50%;
+  border: 2px solid rgba(66, 153, 225, 0.3);
+  animation: dotPulse 2s infinite;
+}
+
+@keyframes dotPulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(1.3);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+}
+
+/* Remove the old animation styles to avoid conflicts */
+.dots-container,
+.dot-animation,
+.dot,
+.sound-wave {
+  display: none;
 }
 </style> 
