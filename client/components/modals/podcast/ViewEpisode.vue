@@ -16,7 +16,7 @@
         </div>
         <div class="flex flex-wrap gap-2 items-center mt-2 md:mt-0">
           <ui-btn @click="openPodcastKnowledgeQuiz" icon="psychology" variant="accent" :disabled="!canTestKnowledge"> Test Knowledge </ui-btn>
-          <ui-btn v-if="hasTranscript && qaEnabled" @click="vectorizeTranscript" variant="secondary" icon="psychology" :loading="isVectorizing" :disabled="isVectorizing"> Vectorize for Q&A </ui-btn>
+          <!-- <ui-btn v-if="hasTranscript && qaEnabled" @click="vectorizeTranscript" variant="secondary" icon="psychology" :loading="isVectorizing" :disabled="isVectorizing"> Vectorize for Q&A </ui-btn> -->
         </div>
       </div>
       <p dir="auto" class="text-xl font-semibold mb-8">{{ title }}</p>
