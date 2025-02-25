@@ -1,35 +1,29 @@
 <template>
-  <modals-modal v-model="show" name="podcast-episode-view-modal" :width="800" :height="'unset'" :processing="processing">
+  <modals-modal v-model="show" name="podcast-episode-view-modal" :width="900" :height="'unset'" :processing="processing">
     <template #outer>
       <div class="absolute top-0 left-0 p-5 w-2/3 overflow-hidden">
         <p class="text-3xl text-white truncate">{{ $strings.LabelEpisode }}</p>
       </div>
     </template>
-    <div ref="wrapper" class="p-4 w-full text-sm rounded-lg bg-bg shadow-lg border border-black-300 relative overflow-y-auto" style="max-height: 80vh">
-      <div class="flex mb-4">
-        <div class="w-12 h-12">
-          <covers-book-cover :library-item="libraryItem" :width="48" :book-cover-aspect-ratio="bookCoverAspectRatio" />
+    <div ref="wrapper" class="p-6 w-full text-sm rounded-lg bg-bg shadow-lg border border-black-300 relative overflow-y-auto" style="max-height: 85vh">
+      <div class="flex flex-col md:flex-row gap-4 mb-6">
+        <div class="w-16 h-16">
+          <covers-book-cover :library-item="libraryItem" :width="64" :book-cover-aspect-ratio="bookCoverAspectRatio" />
         </div>
         <div class="flex-grow px-2">
-          <p class="text-base mb-1">{{ podcastTitle }}</p>
-          <p class="text-xs text-gray-300">{{ podcastAuthor }}</p>
+          <p class="text-lg mb-2">{{ podcastTitle }}</p>
+          <p class="text-sm text-gray-300">{{ podcastAuthor }}</p>
         </div>
-        <div class="flex items-center space-x-2">
-          <button @click="openVoiceChat" class="px-3 py-1 rounded-md bg-primary text-white hover:bg-primary-600 transition-colors flex items-center">
-            <span class="material-symbols mr-1">record_voice_over</span>
-            Voice Chat
-          </button>
-          <button @click="openPodcastKnowledgeQuiz" class="px-3 py-1 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition-colors flex items-center" :class="{ 'opacity-50 cursor-not-allowed': !canTestKnowledge }" :disabled="!canTestKnowledge">
-            <span class="material-symbols mr-1">psychology</span>
-            Test Knowledge
-          </button>
+        <div class="flex flex-wrap gap-2 items-center mt-2 md:mt-0">
+          <ui-btn @click="openPodcastKnowledgeQuiz" icon="psychology" variant="accent" :disabled="!canTestKnowledge"> Test Knowledge </ui-btn>
+          <ui-btn v-if="hasTranscript && qaEnabled" @click="vectorizeTranscript" variant="secondary" icon="psychology" :loading="isVectorizing" :disabled="isVectorizing"> Vectorize for Q&A </ui-btn>
         </div>
       </div>
-      <p dir="auto" class="text-lg font-semibold mb-6">{{ title }}</p>
+      <p dir="auto" class="text-xl font-semibold mb-8">{{ title }}</p>
 
       <!-- Tab Navigation -->
-      <div class="flex border-b border-white/10 mb-4">
-        <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id" :class="['px-4 py-2 -mb-px', activeTab === tab.id ? 'border-b-2 border-primary text-primary' : 'text-gray-300']">
+      <div class="flex border-b border-white/10 mb-6">
+        <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id" :class="['px-4 py-3 -mb-px', activeTab === tab.id ? 'border-b-2 border-primary text-white font-medium' : 'text-gray-300']">
           <div class="flex items-center">
             <span class="material-symbols mr-2">{{ tab.icon }}</span>
             {{ tab.label }}
@@ -45,49 +39,57 @@
 
       <!-- Transcript Tab -->
       <div v-if="activeTab === 'transcript'" class="tab-content">
-        <div v-if="hasTranscript" class="flex justify-between items-center mb-4">
-          <p class="text-sm">{{ $strings.LabelTranscript }}</p>
-          <div class="flex gap-2">
-            <ui-btn @click="viewTranscript" variant="secondary">
-              <span class="material-symbols mr-2">description</span>
-              View Full Transcript
-            </ui-btn>
-            <ui-btn v-if="qaEnabled" @click="vectorizeTranscript" variant="accent" :loading="isVectorizing" :disabled="isVectorizing">
-              <span class="material-symbols mr-2">psychology</span>
-              Vectorize for Q&A
-            </ui-btn>
+        <div v-if="hasTranscript" class="transcript-container">
+          <div v-if="groupedTranscript" class="space-y-3">
+            <div v-for="(group, index) in groupedTranscript" :key="index" class="transcript-group">
+              <div v-if="group.showTimestamp" class="timestamp-marker py-2">
+                <span class="text-xs font-medium bg-black-300/30 px-2 py-1 rounded-md">{{ formatTime(group.timestamp) }}</span>
+              </div>
+              <p class="transcript-text">{{ group.text }}</p>
+            </div>
+          </div>
+          <div v-else class="text-center py-4 text-gray-400">
+            <p>Transcript format not supported for display.</p>
           </div>
         </div>
-        <div v-else class="flex justify-between items-center mb-4">
-          <p class="text-sm">{{ $strings.LabelTranscript }}</p>
-          <ui-btn v-if="transcriptionsEnabled && !isTranscribing && !isQueued" @click="transcribeEpisode" :loading="isTranscribing">
-            <span class="material-symbols mr-2">record_voice_over</span>
-            Transcribe
-          </ui-btn>
-          <ui-btn v-else-if="isQueued" disabled>
-            <span class="material-symbols mr-2">queue</span>
-            Queued for Transcription
-          </ui-btn>
-          <ui-btn v-else-if="isTranscribing" disabled>
-            <span class="material-symbols mr-2 animate-spin">refresh</span>
-            Transcribing...
-          </ui-btn>
+        <div v-else class="flex flex-col items-center justify-center h-full py-10">
+          <div class="max-w-lg text-center">
+            <div class="bg-black-300/20 rounded-lg p-6 mb-6">
+              <span class="material-symbols text-5xl text-primary mb-4">record_voice_over</span>
+              <h3 class="text-xl font-medium mb-2">No Transcript Available</h3>
+              <p class="text-gray-300 mb-6">Generate a transcript to easily search, review, and analyze the content of this episode.</p>
+
+              <div v-if="transcriptionsEnabled">
+                <ui-btn v-if="!isTranscribing && !isQueued" @click="transcribeEpisode" size="lg" icon="record_voice_over" :loading="isTranscribing" class="w-full justify-center"> Generate Transcript </ui-btn>
+                <div v-else-if="isQueued" class="text-center p-4 bg-black-300/30 rounded-lg">
+                  <span class="material-symbols text-2xl mb-2">queue</span>
+                  <p class="text-sm mb-1">Queued for Transcription</p>
+                  <p class="text-xs text-gray-400">Your transcript will be generated soon.</p>
+                </div>
+                <div v-else-if="isTranscribing" class="text-center p-4 bg-black-300/30 rounded-lg">
+                  <span class="material-symbols text-2xl mb-2 animate-spin">refresh</span>
+                  <p class="text-sm mb-1">Transcribing Episode...</p>
+                  <p class="text-xs text-gray-400">This may take a few minutes.</p>
+                </div>
+              </div>
+              <div v-else class="text-center p-4 bg-black-300/30 rounded-lg">
+                <span class="material-symbols text-2xl mb-2">info</span>
+                <p class="text-sm text-gray-300">Transcriptions are not enabled on this server.</p>
+              </div>
+            </div>
+
+            <p class="text-xs text-gray-500">Transcripts help with content discovery, accessibility, and enable AI-powered features like summaries and knowledge testing.</p>
+          </div>
         </div>
       </div>
 
       <!-- Summary Tab -->
       <div v-if="activeTab === 'summary'" class="tab-content">
-        <div class="flex justify-between items-center mb-4">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-6">
           <p class="text-sm">{{ $strings.LabelSummary }}</p>
-          <div class="flex gap-2">
-            <ui-btn v-if="!hasSummary && !isSummarizing && !isSummaryQueued && hasTranscript" @click="generateSummary" :loading="isSummarizing">
-              <span class="material-symbols mr-2">summarize</span>
-              Generate Summary
-            </ui-btn>
-            <ui-btn v-if="hasSummary" @click="deleteSummary" variant="danger" :loading="isDeletingSummary">
-              <span class="material-symbols mr-2">delete</span>
-              Delete Summary
-            </ui-btn>
+          <div class="flex flex-wrap gap-2">
+            <ui-btn v-if="!hasSummary && !isSummarizing && !isSummaryQueued && hasTranscript" @click="generateSummary" icon="summarize" :loading="isSummarizing"> Generate Summary </ui-btn>
+            <ui-btn v-if="hasSummary" @click="deleteSummary" variant="danger" icon="delete" :loading="isDeletingSummary"> Delete Summary </ui-btn>
           </div>
         </div>
 
@@ -115,17 +117,17 @@
         </div>
       </div>
 
-      <div class="w-full h-px bg-white/5 my-4" />
+      <div class="w-full h-px bg-white/10 my-6" />
 
-      <div class="flex items-center">
+      <div class="flex flex-col md:flex-row gap-4 bg-black-300/20 p-4 rounded-lg">
         <div class="flex-grow">
-          <p class="font-semibold text-xs mb-1">{{ $strings.LabelFilename }}</p>
-          <p class="mb-2 text-xs">
+          <p class="font-semibold text-sm mb-2">{{ $strings.LabelFilename }}</p>
+          <p class="mb-2 text-xs overflow-hidden text-ellipsis">
             {{ audioFileFilename }}
           </p>
         </div>
         <div class="flex-grow">
-          <p class="font-semibold text-xs mb-1">{{ $strings.LabelSize }}</p>
+          <p class="font-semibold text-sm mb-2">{{ $strings.LabelSize }}</p>
           <p class="mb-2 text-xs">
             {{ audioFileSize }}
           </p>
@@ -271,14 +273,78 @@ export default {
     canTestKnowledge() {
       // Podcast knowledge quiz can only be tested if there's a summary
       return this.hasSummary
+    },
+    groupedTranscript() {
+      try {
+        if (!this.hasTranscript) return null
+
+        let segments = []
+
+        // Handle new format (object with segments array)
+        if (typeof this.episode.transcript === 'object' && !Array.isArray(this.episode.transcript)) {
+          if (this.episode.transcript.segments && this.episode.transcript.segments.length > 0) {
+            segments = this.episode.transcript.segments.map((segment) => ({
+              timestamp: segment.startTime || 0,
+              text: segment.text || ''
+            }))
+          }
+        }
+
+        // Handle old format (array of results)
+        else if (Array.isArray(this.episode.transcript)) {
+          segments = this.episode.transcript.map((item) => ({
+            timestamp: item.start || 0,
+            text: item.text || ''
+          }))
+        }
+
+        if (segments.length === 0) return null
+
+        // Group segments with timestamps every 5 minutes
+        const FIVE_MINUTES = 300 // 5 minutes in seconds
+        let lastTimestampShown = -FIVE_MINUTES
+        let currentGroup = { timestamp: 0, text: '', showTimestamp: true }
+        let groups = []
+
+        segments.forEach((segment) => {
+          // Check if we need to show a new timestamp (every 5 minutes)
+          const roundedTimestamp = Math.floor(segment.timestamp / FIVE_MINUTES) * FIVE_MINUTES
+
+          if (roundedTimestamp >= lastTimestampShown + FIVE_MINUTES) {
+            // If we have content in the current group, add it to groups
+            if (currentGroup.text) {
+              groups.push(currentGroup)
+            }
+
+            // Start a new group with a timestamp
+            currentGroup = {
+              timestamp: roundedTimestamp,
+              text: segment.text,
+              showTimestamp: true
+            }
+
+            lastTimestampShown = roundedTimestamp
+          } else {
+            // Add to current group without showing timestamp
+            currentGroup.text += ' ' + segment.text
+          }
+        })
+
+        // Add the last group if it has content
+        if (currentGroup.text) {
+          groups.push(currentGroup)
+        }
+
+        return groups
+      } catch (error) {
+        console.error('Failed to format grouped transcript', error)
+        return null
+      }
     }
   },
   methods: {
-    openVoiceChat() {
-      this.$store.commit('globals/setShowVoiceChatModal', true)
-    },
     openPodcastKnowledgeQuiz() {
-      // Prepare episode data for the voice chat
+      // Prepare episode data for the knowledge quiz
       const episodeData = {
         title: this.title,
         podcastTitle: this.podcastTitle,
@@ -376,12 +442,6 @@ export default {
         this.isTranscribing = false
       }
     },
-    viewTranscript() {
-      this.$store.commit('globals/setShowTranscriptModal', {
-        libraryItem: this.libraryItem,
-        episode: this.episode
-      })
-    },
     async vectorizeTranscript() {
       try {
         this.isVectorizing = true
@@ -400,6 +460,18 @@ export default {
         this.$toast.error(error.response?.data?.error || 'Failed to vectorize transcript for Q&A')
       } finally {
         this.isVectorizing = false
+      }
+    },
+    formatTime(seconds) {
+      if (typeof seconds !== 'number') return '00:00'
+
+      const hours = Math.floor(seconds / 3600)
+      const minutes = Math.floor((seconds % 3600) / 60)
+
+      if (hours > 0) {
+        return `${hours}:${minutes.toString().padStart(2, '0')}:00`
+      } else {
+        return `${minutes}:00`
       }
     }
   },
@@ -421,7 +493,36 @@ export default {
 
 <style scoped>
 .tab-content {
-  min-height: 200px;
+  min-height: 220px;
+}
+
+/* Transcript styles */
+.transcript-container {
+  max-height: 400px;
+  overflow-y: auto;
+  width: 100%;
+}
+
+.transcript-group {
+  @apply py-1;
+}
+
+.transcript-group:hover {
+  @apply bg-black-300/10;
+  border-radius: 4px;
+}
+
+.transcript-text {
+  @apply leading-relaxed;
+}
+
+.timestamp-marker {
+  @apply py-2;
+}
+
+/* Fix timestamp display */
+.timestamp-marker span {
+  color: #a3b3ff; /* Light blue color that works well with dark background */
 }
 
 /* Markdown styles */
@@ -435,7 +536,7 @@ export default {
 .summary-content ::v-deep h4,
 .summary-content ::v-deep h5,
 .summary-content ::v-deep h6 {
-  @apply font-bold mb-2 mt-4;
+  @apply font-bold mb-3 mt-5;
 }
 
 .summary-content ::v-deep h1 {
@@ -454,7 +555,7 @@ export default {
 
 .summary-content ::v-deep ul,
 .summary-content ::v-deep ol {
-  @apply mb-4 ml-4;
+  @apply mb-4 ml-6;
 }
 
 .summary-content ::v-deep ul {
@@ -466,7 +567,7 @@ export default {
 }
 
 .summary-content ::v-deep li {
-  @apply mb-1;
+  @apply mb-2;
 }
 
 .summary-content ::v-deep strong {
@@ -479,5 +580,12 @@ export default {
 
 .summary-content ::v-deep a {
   @apply text-primary hover:underline;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .tab-content {
+    min-height: 280px;
+  }
 }
 </style>
