@@ -3,8 +3,8 @@
 ## final stretch todo
 - [ ] deploy 1 hr
 - [ ] demo 1 hr
-- [ ] access transcript and summarization from row
-- [ ] view issue of summary not being refreshed
+- [X] access transcript and summarization from row
+- [ ] view issue of summary not being refreshed. it does refresh, there's just lag. introduce spinner
 - [ ] visualization of responses
 - [ ] tondif git
 

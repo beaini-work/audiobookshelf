@@ -21,6 +21,44 @@
           </div>
 
           <div v-else class="flex-1 flex flex-col min-h-0">
+            <!-- Q&A Card Display -->
+            <div v-if="quizHistory.length > 0" class="mb-4 border border-primary/30 rounded-md p-4 bg-bg-darker">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-lg font-medium text-white">Quiz Results</h3>
+                <div class="flex items-center gap-2">
+                  <button @click="prevQuestion" class="p-1 rounded-full bg-primary/20 text-white hover:bg-primary/40 disabled:opacity-50 disabled:cursor-not-allowed" :disabled="currentQuizIndex === 0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                  <span class="text-sm text-white">{{ currentQuizIndex + 1 }} / {{ quizHistory.length }}</span>
+                  <button @click="nextQuestion" class="p-1 rounded-full bg-primary/20 text-white hover:bg-primary/40 disabled:opacity-50 disabled:cursor-not-allowed" :disabled="currentQuizIndex >= quizHistory.length - 1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="card-content bg-bg-dark border border-primary/20 rounded-lg p-4">
+                <div class="mb-3">
+                  <div class="text-primary-300 font-medium">Question:</div>
+                  <div class="text-white">{{ currentQuiz.question }}</div>
+                </div>
+                <div class="mb-3">
+                  <div class="text-primary-300 font-medium">Your Answer:</div>
+                  <div class="text-white">{{ currentQuiz.userAnswer }}</div>
+                </div>
+                <div class="mb-3">
+                  <div class="text-primary-300 font-medium">Correct Answer:</div>
+                  <div class="text-white">{{ currentQuiz.correctAnswer }}</div>
+                </div>
+                <div class="flex items-center">
+                  <div class="text-primary-300 font-medium mr-2">Score:</div>
+                  <div class="px-3 py-1 rounded-full text-white font-bold" :class="scoreClass(currentQuiz.score)">{{ currentQuiz.score }}%</div>
+                </div>
+              </div>
+            </div>
+
             <!-- Conversation Area -->
             <div class="flex-1 overflow-y-auto mb-4 border border-primary/20 rounded p-3 bg-bg-darker text-white">
               <div v-if="transcript" class="mb-4">
@@ -154,7 +192,9 @@ export default {
         correctAnswer: '',
         userAnswer: '',
         score: 0
-      }
+      },
+      quizHistory: [], // Array to store quiz history
+      currentQuizIndex: 0 // Index to track the currently displayed quiz
     }
   },
   computed: {
@@ -183,11 +223,21 @@ export default {
       const author = this.episodeData.author || this.episodeData.podcastTitle || ''
 
       return `Title: ${title}\n${author ? `Podcast: ${author}\n` : ''}Summary: ${summary}`
+    },
+    currentQuiz() {
+      if (this.quizHistory.length === 0) {
+        return { question: '', correctAnswer: '', userAnswer: '', score: 0 }
+      }
+      return this.quizHistory[this.currentQuizIndex]
     }
   },
   methods: {
     async startSession() {
       try {
+        // Reset quiz history when starting a new session
+        this.quizHistory = []
+        this.currentQuizIndex = 0
+
         // Check if episode data exists before starting
         if (!this.hasEpisodeData) {
           this.$toast.error('Cannot start quiz: No episode data available.', { position: 'bottom-center' })
@@ -396,6 +446,10 @@ export default {
                     userAnswer: args.userAnswer || '',
                     score: args.score || 0
                   }
+
+                  // Add to quiz history and set current index to the latest
+                  this.quizHistory.push({ ...this.podcastQuestionData })
+                  this.currentQuizIndex = this.quizHistory.length - 1
                 }
               } catch (e) {
                 console.error('Error parsing function arguments', e)
@@ -536,6 +590,7 @@ export default {
         this.resetPodcastAssessment()
         this.transcript = ''
         this.responseText = ''
+        // Keep quiz history intact for the session
         this.$toast.success('Podcast quiz session ended', { position: 'bottom-center', timeout: 3000 })
       }
     },
@@ -610,6 +665,27 @@ export default {
         userAnswer: '',
         score: 0
       }
+      // Note: We don't clear quizHistory here to maintain history
+    },
+
+    // Navigation methods for quiz history
+    prevQuestion() {
+      if (this.currentQuizIndex > 0) {
+        this.currentQuizIndex--
+      }
+    },
+
+    nextQuestion() {
+      if (this.currentQuizIndex < this.quizHistory.length - 1) {
+        this.currentQuizIndex++
+      }
+    },
+
+    // Helper method to determine score color class
+    scoreClass(score) {
+      if (score >= 80) return 'bg-green-600'
+      if (score >= 50) return 'bg-yellow-600'
+      return 'bg-red-600'
     }
   },
   beforeDestroy() {
