@@ -1,5 +1,5 @@
 <template>
-  <modals-modal v-model="show" name="podcast-episode-view-modal" :width="900" :height="'unset'" :processing="processing">
+  <modals-modal v-model="show" name="podcast-episode-view-modal" :width="1100" :height="'unset'" :processing="processing">
     <template #outer>
       <div class="absolute top-0 left-0 p-5 w-2/3 overflow-hidden">
         <p class="text-3xl text-white truncate">{{ $strings.LabelEpisode }}</p>
@@ -122,7 +122,6 @@
             </div>
           </div>
         </div>
-      </div>
       </div>
     </div>
   </modals-modal>
@@ -514,13 +513,13 @@ export default {
 <style scoped>
 /* Modal content wrapper with fixed max-height */
 .modal-content-wrapper {
-  max-height: 85vh;
+  max-height: 90vh;
   overflow-y: auto;
 }
 
 /* Fixed height container for tab content to prevent layout shifts */
 .fixed-tab-container {
-  height: 400px;
+  height: 500px;
   position: relative;
   transition: height 0.2s ease-in-out;
 }
@@ -621,7 +620,7 @@ export default {
 /* Responsive adjustments */
 @media (max-width: 640px) {
   .fixed-tab-container {
-    height: 450px;
+    height: 550px;
   }
 }
 </style>
