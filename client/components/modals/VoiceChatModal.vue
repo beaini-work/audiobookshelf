@@ -1,5 +1,5 @@
 <template>
-  <modals-modal v-model="show" name="voice-chat-modal" :width="900" :height="'unset'" :processing="false">
+  <modals-modal v-model="show" name="voice-chat-modal" :width="900" :height="600" :processing="false">
     <template #outer>
       <div class="absolute top-0 left-0 p-5 w-2/3 overflow-hidden">
         <p class="text-3xl text-white truncate">Podcast Knowledge Quiz</p>
@@ -68,8 +68,33 @@
               </div>
             </div>
 
+            <!-- Instructions Card Display (when session is active but no quiz yet) -->
+            <div v-else class="mb-4 border border-primary/30 rounded-md p-4 bg-bg-darker">
+              <div class="flex flex-col items-center justify-center p-4 text-center">
+                <!-- Large Speaking Visual -->
+                <div class="mb-10 relative flex justify-center items-center mt-6">
+                  <!-- Animated sound waves -->
+                  <div class="absolute w-44 h-44 rounded-full border-4 border-white/20 animate-pulse-slow"></div>
+                  <div class="absolute w-36 h-36 rounded-full border-4 border-white/30 animate-pulse-medium"></div>
+                  <div class="absolute w-28 h-28 rounded-full border-4 border-white/40 animate-pulse-fast"></div>
+
+                  <!-- Central microphone icon -->
+                  <div class="z-10 bg-white/10 p-6 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                  </div>
+                </div>
+
+                <div class="mt-4">
+                  <h3 class="text-xl font-medium text-white mb-3">Say "Let's get started"</h3>
+                  <p class="text-gray-300">When you're ready, speak clearly to begin your podcast quiz</p>
+                </div>
+              </div>
+            </div>
+
             <!-- Conversation Area -->
-            <div class="flex-1 overflow-y-auto mb-4 border border-primary/20 rounded p-3 bg-bg-darker text-white">
+            <!-- <div class="flex-1 overflow-y-auto mb-4 border border-primary/20 rounded p-3 bg-bg-darker text-white">
               <div v-if="transcript" class="mb-4">
                 <div class="font-medium mb-1 text-primary-300">You said:</div>
                 <div class="pl-3 py-1 text-gray-200">{{ transcript }}</div>
@@ -79,7 +104,7 @@
                 <div class="font-medium mb-1 text-primary-300">Assistant:</div>
                 <div class="pl-3 py-1 text-gray-200 whitespace-pre-wrap">{{ responseText }}</div>
               </div>
-            </div>
+            </div> -->
 
             <!-- Controls -->
             <div class="flex flex-col md:flex-row gap-3 items-center">
@@ -718,6 +743,34 @@ export default {
   100% {
     opacity: 0.5;
   }
+}
+
+/* Sound wave animations for microphone icon */
+@keyframes pulse-wave {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-wave 3s infinite ease-in-out;
+}
+
+.animate-pulse-medium {
+  animation: pulse-wave 2.5s infinite ease-in-out;
+}
+
+.animate-pulse-fast {
+  animation: pulse-wave 2s infinite ease-in-out;
 }
 
 .animate-pulse {
