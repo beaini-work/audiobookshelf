@@ -393,14 +393,6 @@ export default {
 
       // Open the voice chat modal
       this.$store.commit('globals/setShowVoiceChatModal', true)
-
-      // Short delay to make sure the modal is open and can receive the toast
-      setTimeout(() => {
-        this.$toast.info('Podcast knowledge quiz ready! Ask the assistant to test your knowledge about this episode.', {
-          position: 'bottom-center',
-          timeout: 5000
-        })
-      }, 500)
     },
     async checkTranscriptionStatus() {
       try {
