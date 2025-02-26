@@ -369,21 +369,154 @@ class TranscriptionManager {
     }
   }
 
-  // Split audio file into chunks of approximately 20 minutes each
+  // Split audio file into chunks based on file size to stay under API limits
   async splitAudioFile(audioFilePath, outputDir) {
     return new Promise((resolve, reject) => {
       const basename = Path.basename(audioFilePath, Path.extname(audioFilePath));
       const outputPattern = Path.join(outputDir, `${basename}_%03d${Path.extname(audioFilePath)}`);
       
-      // Using ffmpeg to split the audio file into 20-minute segments
-      // -c copy maintains the original codec to avoid reencoding
-      // -f segment splits the file into segments
-      // -segment_time 1200 makes each segment 20 minutes (1200 seconds)
+      // Aiming for 20MB chunks to stay safely under the 25MB API limit
+      // Use bitrate-based segmentation instead of time-based
+      // First, get audio duration and overall size to calculate appropriate segment size
+      const ffprobeProcess = spawn('ffprobe', [
+        '-v', 'error',
+        '-show_entries', 'format=duration,bit_rate',
+        '-of', 'json',
+        audioFilePath
+      ]);
+      
+      let ffprobeOutput = '';
+      
+      ffprobeProcess.stdout.on('data', (data) => {
+        ffprobeOutput += data.toString();
+      });
+      
+      ffprobeProcess.on('close', (code) => {
+        if (code !== 0) {
+          reject(new Error(`ffprobe failed with code ${code}`));
+          return;
+        }
+        
+        try {
+          // Parse ffprobe output
+          const formatInfo = JSON.parse(ffprobeOutput).format;
+          const duration = parseFloat(formatInfo.duration) || 0;
+          const bitRate = parseInt(formatInfo.bit_rate) || 0;
+          
+          // Calculate segment size in seconds to get approximately 20MB chunks
+          // Target size: 20MB = 20 * 1024 * 1024 bytes
+          // Calculation: segment_time = target_size_in_bytes / (bitrate_in_bits_per_second / 8)
+          const targetSizeInBytes = 20 * 1024 * 1024; // 20MB in bytes
+          let segmentTimeInSeconds = 600; // Default to 10 min if calculation fails
+          
+          if (bitRate > 0) {
+            // Convert bit rate to bytes per second and calculate segment time
+            const bytesPerSecond = bitRate / 8;
+            segmentTimeInSeconds = Math.floor(targetSizeInBytes / bytesPerSecond);
+            
+            // Cap segment time to reasonable limits (between 1 and 30 minutes)
+            segmentTimeInSeconds = Math.max(60, Math.min(segmentTimeInSeconds, 1800));
+          }
+          
+          Logger.info(`[TranscriptionManager] Splitting audio file into segments of ${Math.round(segmentTimeInSeconds)} seconds (approximately 20MB chunks)`);
+          
+          // Using ffmpeg to split the audio file into appropriately sized segments
+          const ffmpeg = spawn('ffmpeg', [
+            '-i', audioFilePath,
+            '-f', 'segment',
+            '-segment_time', segmentTimeInSeconds.toString(),
+            '-c', 'copy',
+            outputPattern
+          ]);
+          
+          let stderr = '';
+          
+          ffmpeg.stderr.on('data', (data) => {
+            stderr += data.toString();
+          });
+          
+          ffmpeg.on('close', (code) => {
+            if (code !== 0) {
+              reject(new Error(`FFmpeg failed with code ${code}: ${stderr}`));
+              return;
+            }
+            
+            // Get the list of created chunk files
+            fs.readdir(outputDir, (err, files) => {
+              if (err) {
+                reject(err);
+                return;
+              }
+              
+              const chunkFiles = files
+                .filter(file => file.startsWith(`${basename}_`))
+                .map(file => Path.join(outputDir, file))
+                .sort(); // Ensure files are in correct order
+              
+              // Verify all chunks are under the size limit
+              const oversizedChunks = chunkFiles.filter(file => {
+                const stats = fs.statSync(file);
+                return stats.size > this.MAX_FILE_SIZE;
+              });
+              
+              if (oversizedChunks.length > 0) {
+                Logger.warn(`[TranscriptionManager] ${oversizedChunks.length} chunks are still over the size limit. Using fallback method for smaller chunks.`);
+                
+                // Clean up the too-large chunks
+                chunkFiles.forEach(file => {
+                  try { fs.unlinkSync(file); } catch (e) { /* ignore */ }
+                });
+                
+                // Use a more aggressive compression for the difficult files
+                this.splitAudioFileWithCompression(audioFilePath, outputDir)
+                  .then(resolve)
+                  .catch(reject);
+              } else {
+                resolve(chunkFiles);
+              }
+            });
+          });
+          
+          // Handle case where ffmpeg process fails to start
+          ffmpeg.on('error', (err) => {
+            reject(new Error(`Failed to start ffmpeg process: ${err.message}`));
+          });
+          
+          // Add timeout to prevent hanging
+          const timeout = setTimeout(() => {
+            ffmpeg.kill('SIGKILL');
+            reject(new Error('FFmpeg process timed out after 10 minutes'));
+          }, 10 * 60 * 1000); // 10 minute timeout
+          
+          ffmpeg.on('close', () => {
+            clearTimeout(timeout);
+          });
+        } catch (error) {
+          reject(new Error(`Error processing audio file info: ${error.message}`));
+        }
+      });
+      
+      ffprobeProcess.on('error', (err) => {
+        reject(new Error(`Failed to start ffprobe process: ${err.message}`));
+      });
+    });
+  }
+  
+  // Fallback method to split audio with compression for difficult files
+  async splitAudioFileWithCompression(audioFilePath, outputDir) {
+    return new Promise((resolve, reject) => {
+      const basename = Path.basename(audioFilePath, Path.extname(audioFilePath));
+      const outputPattern = Path.join(outputDir, `${basename}_%03d.mp3`); // Force mp3 output
+      
+      // Using ffmpeg with compression to ensure smaller chunks
+      // -ab 64k sets audio bitrate to 64kbps (very compressed but acceptable for speech)
+      // -segment_time 300 makes each segment 5 minutes (shorter segments)
       const ffmpeg = spawn('ffmpeg', [
         '-i', audioFilePath,
         '-f', 'segment',
-        '-segment_time', '1200',
-        '-c', 'copy',
+        '-segment_time', '300',
+        '-ab', '64k',
+        '-ac', '1', // Convert to mono
         outputPattern
       ]);
       
@@ -395,7 +528,7 @@ class TranscriptionManager {
       
       ffmpeg.on('close', (code) => {
         if (code !== 0) {
-          reject(new Error(`FFmpeg failed with code ${code}: ${stderr}`));
+          reject(new Error(`FFmpeg compression failed with code ${code}: ${stderr}`));
           return;
         }
         
@@ -411,19 +544,20 @@ class TranscriptionManager {
             .map(file => Path.join(outputDir, file))
             .sort(); // Ensure files are in correct order
           
+          Logger.info(`[TranscriptionManager] Created ${chunkFiles.length} compressed chunks with fallback method`);
           resolve(chunkFiles);
         });
       });
       
       // Handle case where ffmpeg process fails to start
       ffmpeg.on('error', (err) => {
-        reject(new Error(`Failed to start ffmpeg process: ${err.message}`));
+        reject(new Error(`Failed to start ffmpeg compression process: ${err.message}`));
       });
       
       // Add timeout to prevent hanging
       const timeout = setTimeout(() => {
         ffmpeg.kill('SIGKILL');
-        reject(new Error('FFmpeg process timed out after 10 minutes'));
+        reject(new Error('FFmpeg compression process timed out after 10 minutes'));
       }, 10 * 60 * 1000); // 10 minute timeout
       
       ffmpeg.on('close', () => {
