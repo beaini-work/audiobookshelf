@@ -179,6 +179,9 @@ export default {
       handler(newVal) {
         if (newVal && this.episodeId) {
           this.checkTranscriptionStatus()
+          // Fetch summary immediately when libraryItem changes
+          this.fetchSummary()
+          // Also check summary status (which updates UI states)
           this.checkSummaryStatus()
           if (!this.transcriptionQueueInterval) {
             this.transcriptionQueueInterval = setInterval(this.checkTranscriptionStatus, 5000)
@@ -200,6 +203,12 @@ export default {
           this.$store.commit('globals/setSelectedEpisodeTab', null)
         } else {
           this.activeTab = this.initialTab
+        }
+
+        // Fetch summary immediately when modal becomes visible
+        if (this.libraryItem && this.episodeId) {
+          this.fetchSummary()
+          this.checkSummaryStatus()
         }
       }
     }
@@ -411,7 +420,8 @@ export default {
         this.isSummarizing = response.isCurrentlyProcessing
         this.summaryQueuePosition = response.queuePosition
 
-        if (response.status === 'completed') {
+        // Only fetch summary if we don't already have one and it's not being summarized
+        if (!this.summary && !this.isSummarizing) {
           await this.fetchSummary()
         }
       } catch (error) {
@@ -501,7 +511,11 @@ export default {
     }
   },
   mounted() {
+    // Fetch summary immediately on mount - using a single call instead of multiple
     if (this.libraryItem && this.episodeId) {
+      // First fetch the summary directly (fastest way to get content)
+      this.fetchSummary()
+      // Then check status (which will update UI states)
       this.checkSummaryStatus()
     }
   },
