@@ -13,36 +13,44 @@
 - [X] use chromadb with persistent storage for vector store
 - [X] button to vectorize the content on demand
 - [X] search the vector store. where in the UI?
-- [ ] automate vectorization of new content
+- [ ] automate vectorization of new content after transcription
 - [X] vector store the content
 - [X] openai key in docker deployment
-- [ ] ability to configure the summaries
 - [ ] ability to check the episode summary from the KB search result
 
 ## view summary
 
-- [ ] Button to transcribe and summarize
-- [ ] Display summaries in the Knowledge section
-- [ ] clean up the summarize UI. specifically the header
-- [ ] Fix font color in view episode modal when text is selected (currently not visible)
-- [ ] Show transcript content directly in transcript tab instead of requiring button click
-- [ ] Improve CTA placement and design for Generate Summary and Transcribe buttons:
-  - [ ] Place buttons prominently in center of empty tab state
-  - [ ] Use consistent button styling and hierarchy
-  - [ ] Add clear visual feedback for button states (disabled, loading, etc)
-  - [ ] Include helpful empty state messaging
-  - [ ] Ensure adequate spacing and padding around buttons
-  - [ ] Use appropriate button variants to indicate primary/secondary actions
+- [X] Button to transcribe and summarize
+- [X] clean up the summarize UI. specifically the header
+- [X] Fix font color in view episode modal when text is selected (currently not visible)
+- [X] Show transcript content directly in transcript tab instead of requiring button click
+- [X] Improve CTA placement and design for Generate Summary and Transcribe buttons:
+  - [X] Place buttons prominently in center of empty tab state
+  - [X] Use consistent button styling and hierarchy
+  - [X] Add clear visual feedback for button states (disabled, loading, etc)
+  - [X] Include helpful empty state messaging
+  - [X] Ensure adequate spacing and padding around buttons
+  - [X] Use appropriate button variants to indicate primary/secondary actions
+  - [ ] Remove "Test Knowledge"
+
+## audio Q&A
+
+- [ ] add prompt: only ask 1 question at a time about the most important segment
+- [ ] add prompt: placeholders for voice, tone
+- [ ] start it from player automatically and manually feature
+- [ ] start it from episode row
+- [ ] visualization of answers
+- [ ] share the results
+
+# else
+- [ ] 2nd brain
+- [ ] deploy to AWS
+- [ ] record demo
 
 ## finissage
 
 - [ ] tutorial intro
 
-## audio Q&A
-- [ ] only ask 1 question at a time about the most important segment
-- [ ] placeholders for voice, tone
-- [ ] visualization
-- [ ] share the results
 
 # fixes
 
@@ -86,3 +94,4 @@
 - [ ] use tokenizer to split transcript into chunks for vectorization
 - [ ] Add progress tracking for the summary generation process?
 - [ ] check if can transcript on this server before turning it on
+- [ ] ability to configure the summaries
