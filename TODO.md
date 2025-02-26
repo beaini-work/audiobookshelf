@@ -4,7 +4,7 @@
 - [ ] deploy 1 hr
 - [ ] demo 1 hr
 - [X] access transcript and summarization from row
-- [ ] view issue of summary not being refreshed. it does refresh, there's just lag. introduce spinner
+- [X] view issue of summary not being refreshed. it does refresh, there's just lag. introduce spinner
 - [ ] visualization of responses
 - [ ] tondif git
 
