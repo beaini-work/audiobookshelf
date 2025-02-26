@@ -118,23 +118,6 @@
           </div>
         </div>
       </div>
-
-      <div class="w-full h-px bg-white/10 my-6" />
-
-      <div class="flex flex-col md:flex-row gap-4 bg-black-300/20 p-4 rounded-lg">
-        <div class="flex-grow">
-          <p class="font-semibold text-sm mb-2">{{ $strings.LabelFilename }}</p>
-          <p class="mb-2 text-xs overflow-hidden text-ellipsis">
-            {{ audioFileFilename }}
-          </p>
-        </div>
-        <div class="flex-grow">
-          <p class="font-semibold text-sm mb-2">{{ $strings.LabelSize }}</p>
-          <p class="mb-2 text-xs">
-            {{ audioFileSize }}
-          </p>
-        </div>
-      </div>
     </div>
   </modals-modal>
 </template>
