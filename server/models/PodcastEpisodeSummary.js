@@ -2,7 +2,7 @@ const { Model, DataTypes } = require('sequelize')
 
 class PodcastEpisodeSummary extends Model {
   static associate(models) {
-    PodcastEpisodeSummary.belongsTo(models.PodcastEpisode, {
+    PodcastEpisodeSummary.belongsTo(models.podcastEpisode, {
       foreignKey: 'episodeId',
       as: 'episode'
     })
@@ -61,7 +61,7 @@ class PodcastEpisodeSummary extends Model {
       }
     }, {
       sequelize,
-      modelName: 'PodcastEpisodeSummary',
+      modelName: 'podcastEpisodeSummary',
       tableName: 'podcast_episode_summaries'
     })
   }

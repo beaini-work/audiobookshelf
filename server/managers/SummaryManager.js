@@ -198,7 +198,7 @@ REFINED SUMMARY:
       const summary = await this.generateSummary(episode.transcript)
 
       // Store summary in database (but not in vector store)
-      const summaryRecord = await Database.PodcastEpisodeSummary.create({
+      await Database.podcastEpisodeSummaryModel.create({
         episodeId: episode.id,
         summary: summary,
         summaryFormat: 'default',
@@ -231,7 +231,7 @@ REFINED SUMMARY:
       TaskManager.taskFinished(task)
 
       // Create failed summary record
-      await Database.PodcastEpisodeSummary.create({
+      await Database.podcastEpisodeSummaryModel.create({
         episodeId: episode.id,
         status: 'error',
         error: error.message

@@ -140,11 +140,11 @@ class PodcastEpisode extends Model {
       }
     )
 
-    const { podcast } = sequelize.models
-    podcast.hasMany(PodcastEpisode, {
+    const { podcast, podcastEpisode } = sequelize.models
+    podcast.hasMany(podcastEpisode, {
       onDelete: 'CASCADE'
     })
-    PodcastEpisode.belongsTo(podcast)
+    podcastEpisode.belongsTo(podcast)
 
     PodcastEpisode.addHook('afterDestroy', async (instance) => {
       libraryItemsPodcastFilters.clearCountCache('podcastEpisode', 'afterDestroy')

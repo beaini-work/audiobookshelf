@@ -92,7 +92,7 @@ class Database {
 
   /** @type {typeof import('./models/PodcastEpisodeSummary')} */
   get podcastEpisodeSummaryModel() {
-    return this.models.PodcastEpisodeSummary
+    return this.models.podcastEpisodeSummary
   }
 
   /** @type {typeof import('./models/LibraryItem')} */
@@ -341,6 +341,13 @@ class Database {
     require('./models/Setting').init(this.sequelize)
     require('./models/CustomMetadataProvider').init(this.sequelize)
     require('./models/MediaItemShare').init(this.sequelize)
+
+    // Establish model associations
+    Object.values(this.sequelize.models).forEach(model => {
+      if (typeof model.associate === 'function') {
+        model.associate(this.sequelize.models)
+      }
+    })
 
     return this.sequelize.sync({ force, alter: false })
   }
