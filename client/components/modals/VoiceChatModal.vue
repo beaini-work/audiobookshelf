@@ -79,8 +79,6 @@
                 <div class="font-medium mb-1 text-primary-300">Assistant:</div>
                 <div class="pl-3 py-1 text-gray-200 whitespace-pre-wrap">{{ responseText }}</div>
               </div>
-
-              <div v-if="!transcript && !responseText" class="flex items-center justify-center h-full text-gray-400 italic">Conversation will appear here</div>
             </div>
 
             <!-- Controls -->
@@ -113,7 +111,7 @@
         <div class="flex items-center justify-between">
           <div class="flex items-center">
             <div class="w-3 h-3 rounded-full mr-2" :class="isRecording ? 'bg-red-500 animate-pulse' : 'bg-green-500'"></div>
-            <span>{{ isRecording ? 'Recording in progress...' : 'Session active - Ready to record' }}</span>
+            <span>{{ 'Recording in progress...' }}</span>
           </div>
           <button v-if="!showDebug" @click="showDebug = true" class="text-xs text-primary hover:underline">Show Debug</button>
         </div>
@@ -450,9 +448,14 @@ export default {
                     score: args.score || 0
                   }
 
-                  // Add to quiz history and set current index to the latest
-                  this.quizHistory.push({ ...this.podcastQuestionData })
-                  this.currentQuizIndex = this.quizHistory.length - 1
+                  // Only add to quiz history if there's a valid user answer
+                  if (this.podcastQuestionData.userAnswer && this.podcastQuestionData.userAnswer.trim() !== '') {
+                    // Add to quiz history and set current index to the latest
+                    this.quizHistory.push({ ...this.podcastQuestionData })
+                    this.currentQuizIndex = this.quizHistory.length - 1
+                  } else {
+                    console.warn('Skipped adding to quiz history: No valid user answer found')
+                  }
                 }
               } catch (e) {
                 console.error('Error parsing function arguments', e)
