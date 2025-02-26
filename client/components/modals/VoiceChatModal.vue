@@ -107,9 +107,6 @@
             </div> -->
 
             <!-- Controls -->
-            <div class="flex flex-col md:flex-row gap-3 items-center">
-              <button @click="stopSession" class="w-full md:w-auto rounded-md bg-gray-700 text-white px-4 py-2 text-md hover:bg-gray-600 transition-colors">End Session</button>
-            </div>
           </div>
         </div>
 
@@ -139,6 +136,7 @@
             <span>{{ 'Recording in progress...' }}</span>
           </div>
           <button v-if="!showDebug" @click="showDebug = true" class="text-xs text-primary hover:underline">Show Debug</button>
+          <button @click="stopSession" class="w-full md:w-auto rounded-md bg-gray-700 text-white px-4 py-2 text-md hover:bg-gray-600 transition-colors">End Session</button>
         </div>
       </div>
     </div>
