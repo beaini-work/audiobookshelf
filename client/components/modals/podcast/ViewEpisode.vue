@@ -5,7 +5,7 @@
         <p class="text-3xl text-white truncate">{{ $strings.LabelEpisode }}</p>
       </div>
     </template>
-    <div ref="wrapper" class="p-6 w-full text-sm rounded-lg bg-bg shadow-lg border border-black-300 relative overflow-y-auto" style="max-height: 85vh">
+    <div ref="wrapper" class="p-6 w-full text-sm rounded-lg bg-bg shadow-lg border border-black-300 relative modal-content-wrapper">
       <div class="flex flex-col md:flex-row gap-4 mb-6">
         <div class="w-16 h-16">
           <covers-book-cover :library-item="libraryItem" :width="64" :book-cover-aspect-ratio="bookCoverAspectRatio" />
@@ -31,92 +31,98 @@
         </button>
       </div>
 
-      <!-- Description Tab -->
-      <div v-if="activeTab === 'description'" class="tab-content">
-        <div v-if="description" dir="auto" class="default-style less-spacing" v-html="description" />
-        <p v-else class="mb-2">{{ $strings.MessageNoDescription }}</p>
-      </div>
+      <!-- Tab Content Container with Fixed Height -->
+      <div class="fixed-tab-container">
+        <!-- Description Tab -->
+        <div v-if="activeTab === 'description'" class="tab-content">
+          <div v-if="description" dir="auto" class="description-container default-style less-spacing" v-html="description" />
+          <p v-else class="mb-2">{{ $strings.MessageNoDescription }}</p>
+        </div>
 
-      <!-- Transcript Tab -->
-      <div v-if="activeTab === 'transcript'" class="tab-content">
-        <div v-if="hasTranscript" class="transcript-container">
-          <div v-if="groupedTranscript" class="space-y-3">
-            <div v-for="(group, index) in groupedTranscript" :key="index" class="transcript-group">
-              <p class="transcript-text">{{ group.text }}</p>
+        <!-- Transcript Tab -->
+        <div v-if="activeTab === 'transcript'" class="tab-content">
+          <div v-if="hasTranscript" class="transcript-container">
+            <div v-if="groupedTranscript" class="space-y-3">
+              <div v-for="(group, index) in groupedTranscript" :key="index" class="transcript-group">
+                <p class="transcript-text">{{ group.text }}</p>
+              </div>
+            </div>
+            <div v-else class="text-center py-4 text-gray-400">
+              <p>Transcript format not supported for display.</p>
             </div>
           </div>
-          <div v-else class="text-center py-4 text-gray-400">
-            <p>Transcript format not supported for display.</p>
+          <div v-else class="flex flex-col items-center justify-center h-full">
+            <div class="max-w-lg text-center">
+              <div class="rounded-lg p-6">
+                <span class="material-symbols text-5xl text-white mb-4">record_voice_over</span>
+                <h3 class="text-xl font-medium mb-2">No Transcript Available</h3>
+                <p class="text-gray-300 mb-6">Generate a transcript to easily search, review, and analyze the content of this episode.</p>
+
+                <div v-if="transcriptionsEnabled">
+                  <ui-btn v-if="!isTranscribing && !isQueued" @click="transcribeEpisode" size="lg" icon="record_voice_over" :loading="isTranscribing" class="w-full justify-center"> Generate Transcript </ui-btn>
+                  <div v-else-if="isQueued" class="text-center p-4 rounded-lg">
+                    <span class="material-symbols text-2xl mb-2">queue</span>
+                    <p class="text-sm mb-1">Queued for Transcription</p>
+                    <p class="text-xs text-gray-400">Your transcript will be generated soon.</p>
+                  </div>
+                  <div v-else-if="isTranscribing" class="text-center p-4 rounded-lg">
+                    <span class="material-symbols text-2xl mb-2 animate-spin">refresh</span>
+                    <p class="text-sm mb-1">Transcribing Episode...</p>
+                    <p class="text-xs text-gray-400">This may take a few minutes.</p>
+                  </div>
+                </div>
+                <div v-else class="text-center p-4 rounded-lg">
+                  <span class="material-symbols text-2xl mb-2">info</span>
+                  <p class="text-sm text-gray-300">Transcriptions are not enabled on this server.</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <div v-else class="flex flex-col items-center justify-center h-full py-10">
-          <div class="max-w-lg text-center">
-            <div class="rounded-lg p-6 mb-6">
+
+        <!-- Summary Tab -->
+        <div v-if="activeTab === 'summary'" class="tab-content">
+          <div class="summary-container">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-2">
+              <p class="text-sm">{{ $strings.LabelSummary }}</p>
+              <div class="flex flex-wrap gap-2">
+                <!-- Delete Summary button removed -->
+              </div>
+            </div>
+
+            <div v-if="hasSummary" class="prose prose-invert max-w-none summary-content">
+              <div v-html="formattedSummary"></div>
+            </div>
+            <div v-else-if="isSummaryQueued" class="text-center p-4 rounded-lg max-w-md mx-auto">
+              <span class="material-symbols text-2xl mb-2">queue</span>
+              <p class="text-sm mb-1">Queued for Summary Generation</p>
+              <p class="text-xs text-gray-400">Your summary will be generated soon.</p>
+              <p v-if="summaryQueuePosition > 0" class="text-xs text-gray-400 mt-2">Position in queue: {{ summaryQueuePosition }}</p>
+            </div>
+            <div v-else-if="isSummarizing" class="text-center p-4 rounded-lg max-w-md mx-auto">
+              <span class="material-symbols text-2xl mb-2 animate-spin">refresh</span>
+              <p class="text-sm mb-1">Generating Summary...</p>
+              <p class="text-xs text-gray-400">This may take a few minutes.</p>
+            </div>
+            <div v-else-if="!hasTranscript" class="text-center p-4 rounded-lg max-w-md mx-auto">
               <span class="material-symbols text-5xl text-white mb-4">record_voice_over</span>
-              <h3 class="text-xl font-medium mb-2">No Transcript Available</h3>
-              <p class="text-gray-300 mb-6">Generate a transcript to easily search, review, and analyze the content of this episode.</p>
+              <h3 class="text-xl font-medium mb-2">Transcript Required</h3>
+              <p class="text-gray-300 mb-6">Generate a transcript first to create a summary.</p>
+            </div>
+            <div v-else class="flex flex-col items-center justify-center h-full">
+              <div class="max-w-lg text-center">
+                <div class="rounded-lg p-6">
+                  <span class="material-symbols text-5xl text-white mb-4">summarize</span>
+                  <h3 class="text-xl font-medium mb-2">No Summary Available</h3>
+                  <p class="text-gray-300 mb-6">Generate a summary to quickly understand the key points of this episode.</p>
 
-              <div v-if="transcriptionsEnabled">
-                <ui-btn v-if="!isTranscribing && !isQueued" @click="transcribeEpisode" size="lg" icon="record_voice_over" :loading="isTranscribing" class="w-full justify-center"> Generate Transcript </ui-btn>
-                <div v-else-if="isQueued" class="text-center p-4 rounded-lg">
-                  <span class="material-symbols text-2xl mb-2">queue</span>
-                  <p class="text-sm mb-1">Queued for Transcription</p>
-                  <p class="text-xs text-gray-400">Your transcript will be generated soon.</p>
+                  <ui-btn @click="generateSummary" icon="summarize" :loading="isSummarizing" size="lg" class="w-full justify-center"> Generate Summary </ui-btn>
                 </div>
-                <div v-else-if="isTranscribing" class="text-center p-4 rounded-lg">
-                  <span class="material-symbols text-2xl mb-2 animate-spin">refresh</span>
-                  <p class="text-sm mb-1">Transcribing Episode...</p>
-                  <p class="text-xs text-gray-400">This may take a few minutes.</p>
-                </div>
-              </div>
-              <div v-else class="text-center p-4 rounded-lg">
-                <span class="material-symbols text-2xl mb-2">info</span>
-                <p class="text-sm text-gray-300">Transcriptions are not enabled on this server.</p>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      <!-- Summary Tab -->
-      <div v-if="activeTab === 'summary'" class="tab-content">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-2">
-          <p class="text-sm">{{ $strings.LabelSummary }}</p>
-          <div class="flex flex-wrap gap-2">
-            <!-- Delete Summary button removed -->
-          </div>
-        </div>
-
-        <div v-if="hasSummary" class="prose prose-invert max-w-none summary-content">
-          <div v-html="formattedSummary"></div>
-        </div>
-        <div v-else-if="isSummaryQueued" class="text-center p-4 rounded-lg max-w-md mx-auto">
-          <span class="material-symbols text-2xl mb-2">queue</span>
-          <p class="text-sm mb-1">Queued for Summary Generation</p>
-          <p class="text-xs text-gray-400">Your summary will be generated soon.</p>
-          <p v-if="summaryQueuePosition > 0" class="text-xs text-gray-400 mt-2">Position in queue: {{ summaryQueuePosition }}</p>
-        </div>
-        <div v-else-if="isSummarizing" class="text-center p-4 rounded-lg max-w-md mx-auto">
-          <span class="material-symbols text-2xl mb-2 animate-spin">refresh</span>
-          <p class="text-sm mb-1">Generating Summary...</p>
-          <p class="text-xs text-gray-400">This may take a few minutes.</p>
-        </div>
-        <div v-else-if="!hasTranscript" class="text-center p-4 rounded-lg max-w-md mx-auto">
-          <span class="material-symbols text-5xl text-white mb-4">record_voice_over</span>
-          <h3 class="text-xl font-medium mb-2">Transcript Required</h3>
-          <p class="text-gray-300 mb-6">Generate a transcript first to create a summary.</p>
-        </div>
-        <div v-else class="flex flex-col items-center justify-center h-full py-10">
-          <div class="max-w-lg text-center">
-            <div class="rounded-lg p-6 mb-6">
-              <span class="material-symbols text-5xl text-white mb-4">summarize</span>
-              <h3 class="text-xl font-medium mb-2">No Summary Available</h3>
-              <p class="text-gray-300 mb-6">Generate a summary to quickly understand the key points of this episode.</p>
-
-              <ui-btn @click="generateSummary" icon="summarize" :loading="isSummarizing" size="lg" class="w-full justify-center"> Generate Summary </ui-btn>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   </modals-modal>
@@ -506,17 +512,40 @@ export default {
 </script>
 
 <style scoped>
+/* Modal content wrapper with fixed max-height */
+.modal-content-wrapper {
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+/* Fixed height container for tab content to prevent layout shifts */
+.fixed-tab-container {
+  height: 400px;
+  position: relative;
+  transition: height 0.2s ease-in-out;
+}
+
 .tab-content {
-  min-height: 220px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* Container styles for all tabs - scrollable content inside fixed container */
+.description-container,
+.transcript-container,
+.summary-container {
+  max-height: 100%;
+  overflow-y: auto;
+  width: 100%;
+  height: 100%;
 }
 
 /* Transcript styles */
-.transcript-container {
-  max-height: 400px;
-  overflow-y: auto;
-  width: 100%;
-}
-
 .transcript-group {
   @apply py-1;
 }
@@ -591,8 +620,8 @@ export default {
 
 /* Responsive adjustments */
 @media (max-width: 640px) {
-  .tab-content {
-    min-height: 280px;
+  .fixed-tab-container {
+    height: 450px;
   }
 }
 </style>
