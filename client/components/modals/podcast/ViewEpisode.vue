@@ -23,7 +23,7 @@
 
       <!-- Tab Navigation -->
       <div class="flex border-b border-white/10 mb-6">
-        <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id" :class="['px-4 py-3 -mb-px', activeTab === tab.id ? 'border-b-2 border-primary text-white font-medium' : 'text-gray-300']">
+        <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id" :class="['px-4 py-3 -mb-px', activeTab === tab.id ? 'border-b-2 border-white text-white font-medium' : 'text-gray-300']">
           <div class="flex items-center">
             <span class="material-symbols mr-2">{{ tab.icon }}</span>
             {{ tab.label }}
