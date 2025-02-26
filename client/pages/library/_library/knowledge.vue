@@ -68,7 +68,7 @@
 
           <h3 class="text-lg font-semibold mb-3">Sources</h3>
           <div v-if="searchResults.sources && searchResults.sources.length" class="space-y-4">
-            <div v-for="(source, index) in searchResults.sources" :key="index" class="bg-gray-800 p-4 rounded-lg transition-all duration-200 hover:bg-gray-750 hover:border-gray-600 border border-transparent" @click="toggleTranscript(index)">
+            <div v-for="(source, index) in searchResults.sources" :key="index" class="bg-gray-800 p-4 rounded-lg transition-all duration-200 hover:bg-gray-750 hover:border-gray-600 border border-transparent">
               <div class="flex items-start">
                 <!-- Episode cover image -->
                 <div class="flex-shrink-0 mr-4">
@@ -80,7 +80,8 @@
 
                 <!-- Episode info section with accordion-style design -->
                 <div class="flex-grow">
-                  <div class="flex justify-between items-center">
+                  <!-- Make only this header section clickable -->
+                  <div class="flex justify-between items-center cursor-pointer source-header" @click="toggleTranscript(index)">
                     <div class="flex-1 pr-4">
                       <h4 class="font-medium">{{ source.episodeTitle || getEpisodeTitle(source.episodeId) }}</h4>
                       <p class="text-sm text-gray-400">{{ source.podcastTitle || getPodcastTitle(source.podcastId) }}</p>
@@ -94,7 +95,7 @@
                   <!-- Display transcript content with animation -->
                   <transition name="accordion">
                     <div v-if="source.transcriptContent && expandedTranscripts[index]" class="mt-3 border-t border-gray-700 pt-3">
-                      <div class="text-gray-300 text-sm bg-gray-800 bg-opacity-50 p-4 rounded whitespace-pre-line transcript-content overflow-y-auto max-h-64">
+                      <div class="text-gray-300 text-sm bg-gray-800 bg-opacity-50 p-4 rounded whitespace-pre-line transcript-content overflow-y-auto max-h-64" @click.stop>
                         {{ source.transcriptContent }}
                       </div>
                     </div>
@@ -694,5 +695,16 @@ export default {
 .dot,
 .sound-wave {
   display: none;
+}
+
+/* Add styling for the clickable header */
+.source-header {
+  padding: 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.source-header:hover {
+  background-color: rgba(255, 255, 255, 0.05);
 }
 </style> 
