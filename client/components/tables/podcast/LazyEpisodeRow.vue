@@ -176,14 +176,9 @@ export default {
 
       return [
         {
-          text: hasTranscript ? 'View Transcript' : 'Generate Transcript',
+          text: hasTranscript ? 'View Transcript & Summary' : 'Generate Transcript',
           action: hasTranscript ? 'viewTranscript' : 'generateTranscript',
           icon: hasTranscript ? 'description' : 'add_comment'
-        },
-        {
-          text: hasSummary ? 'View Summary' : 'Generate Summary',
-          action: hasSummary ? 'viewSummary' : 'generateSummary',
-          icon: hasSummary ? 'summarize' : 'auto_awesome_motion'
         },
         {
           text: 'Test my knowledge',
