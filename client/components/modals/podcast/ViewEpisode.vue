@@ -80,10 +80,10 @@
 
       <!-- Summary Tab -->
       <div v-if="activeTab === 'summary'" class="tab-content">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-6">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-2">
           <p class="text-sm">{{ $strings.LabelSummary }}</p>
           <div class="flex flex-wrap gap-2">
-            <ui-btn v-if="hasSummary" @click="deleteSummary" variant="danger" icon="delete" :loading="isDeletingSummary"> Delete Summary </ui-btn>
+            <!-- Delete Summary button removed -->
           </div>
         </div>
 
