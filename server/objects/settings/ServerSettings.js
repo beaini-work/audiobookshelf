@@ -45,6 +45,11 @@ class ServerSettings {
     this.transcriptionsEnabled = true // Enable/disable transcription functionality
     this.openQA = true // Enable/disable Q&A search using vectorized transcripts
 
+    // Auto-processing features
+    this.autoTranscribeAfterDownload = false // Enable/disable automatic transcription after episode download
+    this.autoVectorizeAfterTranscription = false // Enable/disable automatic vectorization after transcription 
+    this.autoSummarizeAfterTranscription = false // Enable/disable automatic summarization after transcription
+
     // Sorting
     this.sortingIgnorePrefix = false
     this.sortingPrefixes = ['the', 'a']
@@ -118,6 +123,11 @@ class ServerSettings {
     this.podcastEpisodeSchedule = settings.podcastEpisodeSchedule || '0 * * * *'
     this.transcriptionsEnabled = settings.transcriptionsEnabled !== undefined ? !!settings.transcriptionsEnabled : true
     this.openQA = settings.openQA !== undefined ? !!settings.openQA : false
+    
+    // Auto-processing features
+    this.autoTranscribeAfterDownload = settings.autoTranscribeAfterDownload !== undefined ? !!settings.autoTranscribeAfterDownload : false
+    this.autoVectorizeAfterTranscription = settings.autoVectorizeAfterTranscription !== undefined ? !!settings.autoVectorizeAfterTranscription : false
+    this.autoSummarizeAfterTranscription = settings.autoSummarizeAfterTranscription !== undefined ? !!settings.autoSummarizeAfterTranscription : false
 
     this.sortingIgnorePrefix = !!settings.sortingIgnorePrefix
     this.sortingPrefixes = settings.sortingPrefixes || ['the']
@@ -232,6 +242,9 @@ class ServerSettings {
       podcastEpisodeSchedule: this.podcastEpisodeSchedule,
       transcriptionsEnabled: this.transcriptionsEnabled,
       openQA: this.openQA,
+      autoTranscribeAfterDownload: this.autoTranscribeAfterDownload,
+      autoVectorizeAfterTranscription: this.autoVectorizeAfterTranscription,
+      autoSummarizeAfterTranscription: this.autoSummarizeAfterTranscription,
       sortingIgnorePrefix: this.sortingIgnorePrefix,
       sortingPrefixes: [...this.sortingPrefixes],
       chromecastEnabled: this.chromecastEnabled,

@@ -4,10 +4,10 @@ const axios = require('axios')
 const FormData = require('form-data')
 const { spawn } = require('child_process')
 const Logger = require('../Logger')
+const Database = require('../Database')
+const SocketAuthority = require('../SocketAuthority')
 const TaskManager = require('./TaskManager')
 const Task = require('../objects/Task')
-const SocketAuthority = require('../SocketAuthority')
-const Database = require('../Database')
 
 class TranscriptionManager {
   constructor() {
@@ -521,6 +521,32 @@ class TranscriptionManager {
 
       task.setFinished();
       TaskManager.taskFinished(task);
+
+      // Auto-processing: Vectorize transcript if enabled
+      if (Database.serverSettings.autoVectorizeAfterTranscription) {
+        try {
+          Logger.info(`[TranscriptionManager] Auto-vectorization enabled. Vectorizing transcript for episode "${episode.title}"`);
+          const transcriptQAManager = global.TranscriptQAManager || require('./TranscriptQAManager');
+          await transcriptQAManager.vectorizeEpisodeTranscript(
+            episode, 
+            libraryItem.media.title, 
+            libraryItem.libraryId
+          );
+        } catch (vectorizeError) {
+          Logger.error(`[TranscriptionManager] Error vectorizing transcript: ${vectorizeError.message}`);
+        }
+      }
+
+      // Auto-processing: Generate summary if enabled
+      if (Database.serverSettings.autoSummarizeAfterTranscription) {
+        try {
+          Logger.info(`[TranscriptionManager] Auto-summarization enabled. Generating summary for episode "${episode.title}"`);
+          const summaryManager = global.SummaryManager || require('./SummaryManager');
+          await summaryManager.startSummaryGeneration(libraryItem, episode);
+        } catch (summarizeError) {
+          Logger.error(`[TranscriptionManager] Error generating summary: ${summarizeError.message}`);
+        }
+      }
 
       this.currentTranscription = null;
       this.processNextInQueue();

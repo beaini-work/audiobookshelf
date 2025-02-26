@@ -247,6 +247,15 @@ class PodcastManager {
       NotificationManager.onPodcastEpisodeDownloaded(libraryItem, podcastEpisode)
     }
 
+    // Start automatic transcription if enabled in settings
+    if (Database.serverSettings.transcriptionsEnabled && Database.serverSettings.autoTranscribeAfterDownload) {
+      Logger.info(`[PodcastManager] Auto-transcription enabled. Starting transcription for episode "${podcastEpisode.title}"`)
+      const transcriptionManager = global.TranscriptionManager || require('./TranscriptionManager')
+      transcriptionManager.startTranscription(libraryItem, podcastEpisode).catch(error => {
+        Logger.error(`[PodcastManager] Failed to start auto-transcription for episode "${podcastEpisode.title}"`, error)
+      })
+    }
+
     return true
   }
 

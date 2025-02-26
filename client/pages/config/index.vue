@@ -154,6 +154,41 @@
             </ui-tooltip>
           </div>
 
+          <!-- Auto-processing features -->
+          <div class="flex flex-col space-y-2 mt-2 mb-2 p-2 bg-primary-lighter bg-opacity-20 rounded">
+            <h4 class="text-sm font-semibold text-white">Automatic Processing</h4>
+
+            <div role="article" :aria-label="'Automatically transcribe episodes after download'" class="flex items-center py-2">
+              <ui-toggle-switch label="Auto Transcribe After Download" v-model="newServerSettings.autoTranscribeAfterDownload" :disabled="updatingServerSettings || !newServerSettings.transcriptionsEnabled" @input="(val) => updateSettingsKey('autoTranscribeAfterDownload', val)" />
+              <ui-tooltip aria-hidden="true" text="Automatically start transcription after a podcast episode is downloaded. Requires transcriptions to be enabled.">
+                <p class="pl-4">
+                  <span id="settings-auto-transcribe">Auto Transcribe After Download</span>
+                  <span class="material-symbols icon-text">info</span>
+                </p>
+              </ui-tooltip>
+            </div>
+
+            <div role="article" :aria-label="'Automatically vectorize transcripts after creation'" class="flex items-center py-2">
+              <ui-toggle-switch label="Auto Vectorize After Transcription" v-model="newServerSettings.autoVectorizeAfterTranscription" :disabled="updatingServerSettings || !newServerSettings.transcriptionsEnabled" @input="(val) => updateSettingsKey('autoVectorizeAfterTranscription', val)" />
+              <ui-tooltip aria-hidden="true" text="Automatically vectorize transcript content after transcription completes. Required for Q&A search.">
+                <p class="pl-4">
+                  <span id="settings-auto-vectorize">Auto Vectorize After Transcription</span>
+                  <span class="material-symbols icon-text">info</span>
+                </p>
+              </ui-tooltip>
+            </div>
+
+            <div role="article" :aria-label="'Automatically generate summary after transcription'" class="flex items-center py-2">
+              <ui-toggle-switch label="Auto Summarize After Transcription" v-model="newServerSettings.autoSummarizeAfterTranscription" :disabled="updatingServerSettings || !newServerSettings.transcriptionsEnabled" @input="(val) => updateSettingsKey('autoSummarizeAfterTranscription', val)" />
+              <ui-tooltip aria-hidden="true" text="Automatically generate a summary of the episode content after transcription completes.">
+                <p class="pl-4">
+                  <span id="settings-auto-summarize">Auto Summarize After Transcription</span>
+                  <span class="material-symbols icon-text">info</span>
+                </p>
+              </ui-tooltip>
+            </div>
+          </div>
+
           <div class="flex-grow py-2">
             <ui-dropdown :label="$strings.LabelSettingsDateFormat" v-model="newServerSettings.dateFormat" :items="dateFormats" small class="max-w-52" @input="(val) => updateSettingsKey('dateFormat', val)" />
             <p class="text-xs ml-1 text-white text-opacity-60">{{ $strings.LabelExample }}: {{ dateExample }}</p>

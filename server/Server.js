@@ -115,7 +115,17 @@ class Server {
     this.apiCacheManager = new ApiCacheManager()
     this.binaryManager = new BinaryManager()
     this.summaryManager = new SummaryManager()
+    
+    // Initialize transcript-related managers
+    const TranscriptionManager = require('./managers/TranscriptionManager')
+    this.transcriptionManager = TranscriptionManager
     this.transcriptQAManager = require('./managers/TranscriptQAManager')
+
+    // Make managers available globally
+    global.TranscriptionManager = TranscriptionManager
+    global.SummaryManager = this.summaryManager
+    global.TranscriptQAManager = this.transcriptQAManager
+    global.PodcastManager = this.podcastManager
 
     // Routers
     this.apiRouter = new ApiRouter(this)
