@@ -363,7 +363,6 @@ export default {
 
         this.peerConnection = pc
         this.isSessionActive = true
-        this.$toast.success('Podcast quiz session started', { position: 'bottom-center', timeout: 3000 })
 
         // Send initial system message
         this.sendClientEvent({
@@ -575,7 +574,6 @@ export default {
       if (this.mediaRecorder && this.isRecording) {
         this.isRecording = false
         this.mediaRecorder.stop()
-        this.$toast.info('Recording stopped', { position: 'bottom-center', timeout: 2000 })
       }
     },
 
@@ -612,7 +610,6 @@ export default {
         this.transcript = ''
         this.responseText = ''
         // Keep quiz history intact for the session
-        this.$toast.success('Podcast quiz session ended', { position: 'bottom-center', timeout: 3000 })
       }
     },
 
@@ -684,8 +681,6 @@ export default {
           ]
         }
       })
-
-      this.$toast.info('Podcast knowledge test started', { position: 'bottom-center', timeout: 2000 })
     },
 
     resetPodcastAssessment() {
