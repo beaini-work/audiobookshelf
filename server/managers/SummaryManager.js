@@ -8,6 +8,7 @@ const { loadSummarizationChain } = require("langchain/chains")
 const { ChatOpenAI } = require("@langchain/openai")
 const { PromptTemplate } = require("@langchain/core/prompts")
 const { Document } = require("langchain/document")
+const { TokenTextSplitter } = require("langchain/text_splitter")
 
 class SummaryManager {
   constructor() {
@@ -19,6 +20,11 @@ class SummaryManager {
     const chromaPort = process.env.CHROMA_PORT || '8000';
     const chromaAuthProvider = process.env.CHROMA_AUTH_PROVIDER || 'basic';
     const chromaAuthCredentials = process.env.CHROMA_AUTH_CREDENTIALS || 'admin:admin';
+    
+    // Text splitter configuration
+    this.chunkSize = parseInt(process.env.CHUNK_SIZE || '110000', 10); // Default: 110000 tokens per chunk
+    this.chunkOverlap = parseInt(process.env.CHUNK_OVERLAP || '50', 10); // Default: 50 tokens overlap
+    this.encodingName = process.env.ENCODING_NAME || 'cl100k_base'; // Default: OpenAI's encoding
     
     this.chromaClient = new ChromaClient({
       path: `${chromaHost}:${chromaPort}`,
@@ -179,7 +185,7 @@ REFINED SUMMARY:
       const collection = await this.initializeChromaDB()
 
       // Process transcript into chunks for vector storage
-      const processedChunks = this.processTranscriptIntoChunks(episode.transcript)
+      const processedChunks = await this.processTranscriptIntoChunks(episode.transcript)
       
       // Store transcript chunks in ChromaDB
       const chunkIds = processedChunks.map((_, index) => `${episode.id}_chunk_${index}`)
@@ -249,11 +255,13 @@ REFINED SUMMARY:
     }
   }
 
-  processTranscriptIntoChunks(transcript) {
-    // Constants for chunking
-    const TARGET_CHUNK_SIZE = 1500 // Characters
-    const MIN_CHUNK_SIZE = 1000 // Minimum characters per chunk
-    const OVERLAP_SIZE = 2 // Number of sentences to overlap
+  async processTranscriptIntoChunks(transcript) {
+    Logger.info('[SummaryManager] Starting transcript chunking using TokenTextSplitter');
+    Logger.debug('[SummaryManager] Chunk configuration:', {
+      chunkSize: this.chunkSize,
+      chunkOverlap: this.chunkOverlap,
+      encodingName: this.encodingName
+    });
 
     // First, process transcript segments to maintain timestamp information
     const processedSegments = transcript.segments.map(segment => ({
@@ -262,83 +270,71 @@ REFINED SUMMARY:
       endTime: segment.end || null
     }))
 
-    // Split all segments into sentences while preserving timing info
-    const sentencesWithMetadata = []
+    // Combine all segments into a single text while tracking segment boundaries
+    let fullText = '';
+    const segmentBoundaries = [];
+    
     for (const segment of processedSegments) {
-      const sentences = segment.text.split(/(?<=[.!?])\s+/)
+      const startPosition = fullText.length;
+      fullText += (fullText ? ' ' : '') + segment.text;
+      const endPosition = fullText.length;
       
-      // Use segment timing for all sentences since we don't have word-level timing
-      sentences.forEach(sentence => {
-        sentencesWithMetadata.push({
-          text: sentence,
-          startTime: segment.startTime,
-          endTime: segment.endTime,
-          words: []
-        })
-      })
+      segmentBoundaries.push({
+        text: segment.text,
+        startPos: startPosition,
+        endPos: endPosition,
+        startTime: segment.startTime,
+        endTime: segment.endTime
+      });
     }
 
-    // Create chunks with overlap
-    const chunks = []
-    let currentChunk = {
-      text: '',
-      sentences: [],
-      startTime: null,
-      endTime: null
-    }
+    // Use TokenTextSplitter to chunk the full text
+    const tokenSplitter = new TokenTextSplitter({
+      chunkSize: this.chunkSize,
+      chunkOverlap: this.chunkOverlap,
+      encodingName: this.encodingName
+    });
 
-    for (let i = 0; i < sentencesWithMetadata.length; i++) {
-      const sentence = sentencesWithMetadata[i]
+    // Split the text into chunks - using await as splitText returns a Promise
+    const textChunks = await tokenSplitter.splitText(fullText);
+    Logger.debug(`[SummaryManager] Created ${textChunks.length} chunks from transcript`);
+    
+    // For each chunk, determine its timing information based on segment boundaries
+    const chunksWithMetadata = textChunks.map((chunkText, index) => {
+      // Find the chunk's position in the full text
+      const chunkStartPos = fullText.indexOf(chunkText);
+      const chunkEndPos = chunkStartPos + chunkText.length;
       
-      // Initialize chunk timing if this is the first sentence
-      if (!currentChunk.startTime) {
-        currentChunk.startTime = sentence.startTime
-      }
+      // Find the segments that overlap with this chunk
+      const overlappingSegments = segmentBoundaries.filter(
+        segment => (segment.startPos < chunkEndPos && segment.endPos > chunkStartPos)
+      );
       
-      // Update chunk end time
-      currentChunk.endTime = sentence.endTime
+      // If there are overlapping segments, use the earliest start time and latest end time
+      const startTime = overlappingSegments.length 
+        ? Math.min(...overlappingSegments.map(s => s.startTime).filter(t => t !== null))
+        : null;
       
-      // Add sentence to current chunk
-      currentChunk.sentences.push(sentence)
-      currentChunk.text += (currentChunk.text ? ' ' : '') + sentence.text
-
-      // Check if we should create a new chunk
-      const isLastSentence = i === sentencesWithMetadata.length - 1
-      const chunkIsFull = currentChunk.text.length >= TARGET_CHUNK_SIZE
+      const endTime = overlappingSegments.length 
+        ? Math.max(...overlappingSegments.map(s => s.endTime).filter(t => t !== null))
+        : null;
       
-      if ((chunkIsFull || isLastSentence) && currentChunk.text.length >= MIN_CHUNK_SIZE) {
-        // Finalize current chunk
-        chunks.push({
-          text: currentChunk.text.trim(),
-          startTime: currentChunk.startTime,
-          endTime: currentChunk.endTime,
-          sentenceCount: currentChunk.sentences.length
-        })
-
-        // Start new chunk with overlap
-        if (!isLastSentence) {
-          const overlapSentences = currentChunk.sentences.slice(-OVERLAP_SIZE)
-          currentChunk = {
-            text: overlapSentences.map(s => s.text).join(' '),
-            sentences: overlapSentences,
-            startTime: overlapSentences[0].startTime,
-            endTime: overlapSentences[overlapSentences.length - 1].endTime
-          }
+      return {
+        text: chunkText,
+        metadata: {
+          chunkIndex: index,
+          totalChunks: textChunks.length,
+          startTime,
+          endTime,
+          sentenceCount: (chunkText.match(/[.!?]+\s/g) || []).length + 1,
+          approximateTokenCount: Math.round(chunkText.length / 4), // Rough estimate of tokens
+          approximateCharCount: chunkText.length
         }
-      }
-    }
+      };
+    });
 
-    return chunks.map((chunk, index) => ({
-      text: chunk.text,
-      metadata: {
-        chunkIndex: index,
-        totalChunks: chunks.length,
-        startTime: chunk.startTime,
-        endTime: chunk.endTime,
-        sentenceCount: chunk.sentenceCount,
-        approximateCharCount: chunk.text.length
-      }
-    }))
+    Logger.info(`[SummaryManager] Finished chunking transcript into ${chunksWithMetadata.length} chunks`);
+    return chunksWithMetadata;
   }
 
   async generateSummary(transcript) {
@@ -349,7 +345,12 @@ REFINED SUMMARY:
       }
 
       // Convert transcript chunks to LangChain documents
-      const docs = this.processTranscriptToDocuments(transcript)
+      const docs = await this.processTranscriptToDocuments(transcript)
+      Logger.info(`[SummaryManager] Processing ${docs.length} transcript chunks for summarization`)
+      
+      // Estimate total token count for all documents
+      const estimatedTotalTokens = docs.reduce((sum, doc) => sum + (doc.metadata.approximateTokenCount || 0), 0)
+      Logger.debug(`[SummaryManager] Estimated total tokens for summarization: ${estimatedTotalTokens}`)
 
       // Create the summarization chain
       const chain = loadSummarizationChain(this.llm, {
@@ -360,7 +361,9 @@ REFINED SUMMARY:
       })
 
       // Generate the summary
+      Logger.info(`[SummaryManager] Starting LLM summarization chain`)
       const summary = await chain.run(docs)
+      Logger.info(`[SummaryManager] Successfully generated summary (${summary.trim().length} characters)`)
       return summary.trim()
     } catch (error) {
       Logger.error('[SummaryManager] Error generating summary:', error)
@@ -368,10 +371,10 @@ REFINED SUMMARY:
     }
   }
 
-  processTranscriptToDocuments(transcript) {
+  async processTranscriptToDocuments(transcript) {
     // Process transcript segments into LangChain documents
     // We'll use the same chunking logic but format for LangChain
-    const chunks = this.processTranscriptIntoChunks(transcript)
+    const chunks = await this.processTranscriptIntoChunks(transcript)
     
     return chunks.map(chunk => {
       return new Document({
