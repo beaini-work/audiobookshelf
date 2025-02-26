@@ -1,5 +1,13 @@
 # TODO
 
+## final stretch todo
+- [ ] deploy 1 hr
+- [ ] demo 1 hr
+- [ ] access transcript and summarization from row
+- [ ] view issue of summary not being refreshed
+- [ ] visualization of responses
+- [ ] tondif git
+
 ## transcription
 
 - [ ] transcribe on download
