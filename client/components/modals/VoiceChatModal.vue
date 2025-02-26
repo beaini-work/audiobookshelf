@@ -611,6 +611,9 @@ export default {
         this.responseText = ''
         // Keep quiz history intact for the session
       }
+
+      // Close the modal completely
+      this.$store.commit('globals/setShowVoiceChatModal', false)
     },
 
     formatTimestamp(timestamp) {
