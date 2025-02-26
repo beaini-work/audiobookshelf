@@ -60,7 +60,7 @@
 - [ ] tutorial intro
 
 
-# fixes
+# bugssss
 
 - [ ] can click transcribe multiple time to file that's queued
 - [ ] can view the non-exitent transcipt before it's done
