@@ -615,6 +615,9 @@ export default {
         this.responseText = ''
         // Keep quiz history intact for the session
         this.$toast.success('Podcast quiz session ended', { position: 'bottom-center', timeout: 3000 })
+
+        // Close the modal
+        this.show = false
       }
     },
 
