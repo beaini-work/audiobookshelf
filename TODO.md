@@ -10,8 +10,8 @@
 
 ## transcription
 
-- [ ] transcribe on download
-- [ ] add setting to transcribe on download
+- [X] transcribe on download
+- [X] add setting to transcribe on download
 - [x] add config / setting to display transcript in player
 - [x] setting for the size of the transcript
 
@@ -21,7 +21,7 @@
 - [X] use chromadb with persistent storage for vector store
 - [X] button to vectorize the content on demand
 - [X] search the vector store. where in the UI?
-- [ ] automate vectorization of new content after transcription
+- [X] automate vectorization of new content after transcription
 - [X] vector store the content
 - [X] openai key in docker deployment
 - [ ] ability to check the episode summary from the KB search result
@@ -51,7 +51,7 @@
 - [ ] share the results
 
 # else
-- [ ] 2nd brain
+- [X] 2nd brain
 - [ ] deploy to AWS
 - [ ] record demo
 
