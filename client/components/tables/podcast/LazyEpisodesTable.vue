@@ -402,6 +402,12 @@ export default {
       this.$store.commit('globals/setSelectedEpisode', episode)
       this.$store.commit('globals/setShowViewPodcastEpisodeModal', true)
     },
+    viewEpisodeWithTab(episode, initialTab) {
+      this.$store.commit('setSelectedLibraryItem', this.libraryItem)
+      this.$store.commit('globals/setSelectedEpisode', episode)
+      this.$store.commit('globals/setShowViewPodcastEpisodeModal', true)
+      this.$store.commit('globals/setSelectedEpisodeTab', initialTab)
+    },
     destroyEpisodeComponents() {
       for (const key in this.episodeComponentRefs) {
         if (this.episodeComponentRefs[key]?.destroy) {
@@ -448,6 +454,9 @@ export default {
             })
             this.$on('view', (payload) => {
               _this.viewEpisode(payload)
+            })
+            this.$on('viewWithTab', (episode, initialTab) => {
+              _this.viewEpisodeWithTab(episode, initialTab)
             })
             this.$on('play', (payload) => {
               _this.playEpisode(payload)

@@ -199,7 +199,7 @@ export default {
       if (!this.isSelectionMode) this.isSelected = false
     },
     clickedEpisode() {
-      this.$emit('view', this.episode)
+      this.$emit('view', this.episode, 'description')
     },
     clickedSelectionBg() {
       this.isSelected = !this.isSelected
@@ -288,13 +288,15 @@ export default {
 
       switch (action.action) {
         case 'viewTranscript':
-          this.$emit('viewTranscript', this.episode)
+          // Emit a dedicated viewWithTab event for better clarity
+          this.$emit('viewWithTab', this.episode, 'transcript')
           break
         case 'generateTranscript':
           this.$emit('generateTranscript', this.episode)
           break
         case 'viewSummary':
-          this.$emit('viewSummary', this.episode)
+          // Emit a dedicated viewWithTab event for better clarity
+          this.$emit('viewWithTab', this.episode, 'summary')
           break
         case 'generateSummary':
           this.$emit('generateSummary', this.episode)

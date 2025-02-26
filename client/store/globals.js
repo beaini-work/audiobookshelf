@@ -19,6 +19,7 @@ export const state = () => ({
   showEditAuthorModal: false,
   rssFeedEntity: null,
   selectedEpisode: null,
+  selectedEpisodeTab: 'description', // Default tab for episode view
   selectedPlaylistItems: null,
   selectedPlaylist: null,
   selectedCollection: null,
@@ -185,6 +186,9 @@ export const mutations = {
   },
   setSelectedEpisode(state, episode) {
     state.selectedEpisode = episode
+  },
+  setSelectedEpisodeTab(state, tab) {
+    state.selectedEpisodeTab = tab
   },
   setSelectedPlaylistItems(state, items) {
     state.selectedPlaylistItems = items

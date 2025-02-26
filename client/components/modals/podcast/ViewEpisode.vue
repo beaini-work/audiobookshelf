@@ -143,6 +143,15 @@
 import { marked } from '@/static/libs/marked/index.js'
 
 export default {
+  props: {
+    initialTab: {
+      type: String,
+      default: 'description',
+      validator: function (value) {
+        return ['description', 'transcript', 'summary'].includes(value)
+      }
+    }
+  },
   data() {
     return {
       processing: false,
@@ -150,7 +159,7 @@ export default {
       isQueued: false,
       transcriptionQueueInterval: null,
       summaryCheckInterval: null,
-      activeTab: 'description',
+      activeTab: this.initialTab,
       isSummarizing: false,
       isSummaryQueued: false,
       summaryQueuePosition: 0,
@@ -177,6 +186,20 @@ export default {
           if (!this.summaryCheckInterval) {
             this.summaryCheckInterval = setInterval(this.checkSummaryStatus, 5000)
           }
+        }
+      }
+    },
+    show(newVal) {
+      // When modal becomes visible, set the active tab
+      if (newVal) {
+        // Check if the store has a selected tab, otherwise use the initialTab prop
+        const storeSelectedTab = this.$store.state.globals.selectedEpisodeTab
+        if (storeSelectedTab && ['description', 'transcript', 'summary'].includes(storeSelectedTab)) {
+          this.activeTab = storeSelectedTab
+          // Reset the store value after using it
+          this.$store.commit('globals/setSelectedEpisodeTab', null)
+        } else {
+          this.activeTab = this.initialTab
         }
       }
     }
