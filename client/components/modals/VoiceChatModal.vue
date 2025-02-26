@@ -11,8 +11,17 @@
         <div class="flex-1 flex flex-col border border-primary/30 rounded-md p-4 min-h-0 bg-bg-dark">
           <div v-if="!isSessionActive" class="flex-1 flex flex-col items-center justify-center">
             <div v-if="hasEpisodeData">
-              <button @click="startSession" class="rounded-md bg-primary text-white px-6 py-3 text-xl hover:bg-primary-600 transition-colors">Start Podcast Quiz</button>
-              <p class="mt-4 text-gray-300 text-center max-w-md">Start a quiz session to test your knowledge about "{{ episodeData.title }}". Answer questions and get feedback to enhance your understanding.</p>
+              <p class="text-gray-300 text-center max-w-md">
+                <span class="inline-block mb-3">
+                  <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-primary inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Connecting to podcast quiz...
+                </span>
+                <br />
+                Preparing quiz for "{{ episodeData.title }}". The session will start automatically.
+              </p>
             </div>
             <div v-else class="text-center p-6">
               <p class="text-red-400 text-xl mb-4">No Episode Data Available</p>
@@ -229,6 +238,14 @@ export default {
         return { question: '', correctAnswer: '', userAnswer: '', score: 0 }
       }
       return this.quizHistory[this.currentQuizIndex]
+    }
+  },
+  watch: {
+    show(newVal) {
+      // Automatically start session when modal becomes visible and episode data is available
+      if (newVal && this.hasEpisodeData && !this.isSessionActive) {
+        this.startSession()
+      }
     }
   },
   methods: {
