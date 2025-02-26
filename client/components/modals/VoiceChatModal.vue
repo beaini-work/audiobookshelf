@@ -624,12 +624,22 @@ export default {
     },
 
     formatEventData(data) {
-      // Truncate large arrays for display
-      const sanitizedData = JSON.parse(JSON.stringify(data))
-      if (sanitizedData.audio_buffer && sanitizedData.audio_buffer.length > 100) {
-        sanitizedData.audio_buffer = `[Array(${sanitizedData.audio_buffer.length}) truncated]`
+      // Check if data is undefined or null
+      if (data === undefined || data === null) {
+        return 'No data available'
       }
-      return JSON.stringify(sanitizedData, null, 2)
+
+      try {
+        // Truncate large arrays for display
+        const sanitizedData = JSON.parse(JSON.stringify(data))
+        if (sanitizedData.audio_buffer && sanitizedData.audio_buffer.length > 100) {
+          sanitizedData.audio_buffer = `[Array(${sanitizedData.audio_buffer.length}) truncated]`
+        }
+        return JSON.stringify(sanitizedData, null, 2)
+      } catch (error) {
+        console.error('Error formatting event data:', error)
+        return `Error formatting data: ${typeof data}`
+      }
     },
 
     requestPodcastQuiz() {
