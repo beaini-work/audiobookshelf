@@ -256,11 +256,10 @@ REFINED SUMMARY:
     const OVERLAP_SIZE = 2 // Number of sentences to overlap
 
     // First, process transcript segments to maintain timestamp information
-    const processedSegments = transcript.map(segment => ({
-      text: segment.transcript,
-      words: segment.words || [],
-      startTime: segment.words?.[0]?.startTime || null,
-      endTime: segment.words?.[segment.words.length - 1]?.endTime || null
+    const processedSegments = transcript.segments.map(segment => ({
+      text: segment.text,
+      startTime: segment.start || null,
+      endTime: segment.end || null
     }))
 
     // Split all segments into sentences while preserving timing info
@@ -268,39 +267,15 @@ REFINED SUMMARY:
     for (const segment of processedSegments) {
       const sentences = segment.text.split(/(?<=[.!?])\s+/)
       
-      // If segment has word-level timing, distribute words to sentences
-      if (segment.words.length > 0) {
-        let wordIndex = 0
-        for (const sentence of sentences) {
-          const sentenceWords = []
-          while (wordIndex < segment.words.length) {
-            const word = segment.words[wordIndex]
-            if (sentence.includes(word.word)) {
-              sentenceWords.push(word)
-              wordIndex++
-            } else {
-              break
-            }
-          }
-          
-          sentencesWithMetadata.push({
-            text: sentence,
-            startTime: sentenceWords[0]?.startTime || segment.startTime,
-            endTime: sentenceWords[sentenceWords.length - 1]?.endTime || segment.endTime,
-            words: sentenceWords
-          })
-        }
-      } else {
-        // If no word-level timing, use segment timing for all sentences
-        sentences.forEach(sentence => {
-          sentencesWithMetadata.push({
-            text: sentence,
-            startTime: segment.startTime,
-            endTime: segment.endTime,
-            words: []
-          })
+      // Use segment timing for all sentences since we don't have word-level timing
+      sentences.forEach(sentence => {
+        sentencesWithMetadata.push({
+          text: sentence,
+          startTime: segment.startTime,
+          endTime: segment.endTime,
+          words: []
         })
-      }
+      })
     }
 
     // Create chunks with overlap
