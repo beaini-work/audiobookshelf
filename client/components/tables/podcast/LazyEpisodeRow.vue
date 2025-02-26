@@ -37,6 +37,32 @@
             <ui-icon-btn icon="playlist_add" borderless @click="clickAddToPlaylist" />
           </ui-tooltip>
 
+          <!-- Knowledge dropdown button -->
+          <ui-tooltip :text="'AI Knowledge Tools'" direction="top">
+            <div class="knowledge-dropdown">
+              <ui-context-menu-dropdown :items="knowledgeMenuItems" :icon-class="'text-blue-400'" :menu-width="220" @action="handleKnowledgeAction">
+                <template v-slot:default="slotProps">
+                  <button
+                    type="button"
+                    :disabled="slotProps.disabled"
+                    class="relative h-9 w-9 flex items-center justify-center shadow-sm text-left focus:outline-none cursor-pointer text-blue-400 hover:text-blue-300 rounded-full hover:bg-white/5"
+                    aria-label="AI Knowledge Tools"
+                    aria-haspopup="menu"
+                    :aria-expanded="slotProps.showMenu"
+                    @click.stop.prevent="
+                      () => {
+                        slotProps.clickShowMenu()
+                        $nextTick(checkAndRepositionDropdowns)
+                      }
+                    "
+                  >
+                    <span class="material-symbols text-2xl">psychology</span>
+                  </button>
+                </template>
+              </ui-context-menu-dropdown>
+            </div>
+          </ui-tooltip>
+
           <ui-icon-btn v-if="userCanUpdate" icon="edit" borderless @click="clickEdit" />
           <ui-icon-btn v-if="userCanDelete" icon="close" borderless @click="removeClick" />
         </div>
@@ -139,6 +165,32 @@ export default {
       const duration = this.itemProgress.duration || this.episode?.duration || 0
       const remaining = Math.floor(duration - this.itemProgress.currentTime)
       return this.$getString('LabelTimeLeft', [this.$elapsedPretty(remaining)])
+    },
+    // Knowledge menu items
+    knowledgeMenuItems() {
+      // Check if transcript exists for this episode
+      const hasTranscript = this.episode?.transcript !== undefined
+
+      // Check if summary exists for this episode
+      const hasSummary = this.episode?.summary !== undefined
+
+      return [
+        {
+          text: hasTranscript ? 'View Transcript' : 'Generate Transcript',
+          action: hasTranscript ? 'viewTranscript' : 'generateTranscript',
+          icon: hasTranscript ? 'description' : 'add_comment'
+        },
+        {
+          text: hasSummary ? 'View Summary' : 'Generate Summary',
+          action: hasSummary ? 'viewSummary' : 'generateSummary',
+          icon: hasSummary ? 'summarize' : 'auto_awesome_motion'
+        },
+        {
+          text: 'Test my knowledge',
+          action: 'testKnowledge',
+          icon: 'quiz'
+        }
+      ]
     }
   },
   methods: {
@@ -229,8 +281,137 @@ export default {
       } else if (this.$el && this.$el.remove) {
         this.$el.remove()
       }
+    },
+    handleKnowledgeAction(action) {
+      // Implement the logic for handling knowledge action
+      console.log('Handling knowledge action:', action)
+
+      switch (action.action) {
+        case 'viewTranscript':
+          this.$emit('viewTranscript', this.episode)
+          break
+        case 'generateTranscript':
+          this.$emit('generateTranscript', this.episode)
+          break
+        case 'viewSummary':
+          this.$emit('viewSummary', this.episode)
+          break
+        case 'generateSummary':
+          this.$emit('generateSummary', this.episode)
+          break
+        case 'testKnowledge':
+          this.$emit('testKnowledge', this.episode)
+          break
+        default:
+          console.warn('Unknown knowledge action:', action)
+      }
+    },
+    checkAndRepositionDropdowns() {
+      // Wait for DOM updates
+      this.$nextTick(() => {
+        // Find all dropdown menus in the document
+        const dropdownMenus = document.querySelectorAll('[role="menu"]')
+
+        dropdownMenus.forEach((menu) => {
+          if (menu.style.display !== 'none') {
+            // Ensure high z-index
+            menu.style.zIndex = '9999'
+            // Make sure it's fixed position
+            menu.style.position = 'fixed'
+
+            // Get the button position
+            const dropdownButton = this.$el.querySelector('.knowledge-dropdown button')
+            if (dropdownButton) {
+              const buttonRect = dropdownButton.getBoundingClientRect()
+
+              // Calculate optimal position relative to viewport
+              const viewportHeight = window.innerHeight
+              const menuHeight = menu.offsetHeight
+
+              // Position above if there's not enough space below
+              if (buttonRect.bottom + menuHeight > viewportHeight) {
+                menu.style.top = buttonRect.top - menuHeight - 5 + 'px'
+              } else {
+                menu.style.top = buttonRect.bottom + 5 + 'px'
+              }
+
+              // Align horizontally with the button
+              menu.style.left = buttonRect.left + 'px'
+
+              // Make sure the menu isn't clipped by window width
+              const menuRight = buttonRect.left + menu.offsetWidth
+              if (menuRight > window.innerWidth) {
+                menu.style.left = window.innerWidth - menu.offsetWidth - 10 + 'px'
+              }
+            }
+          }
+        })
+      })
     }
   },
-  mounted() {}
+  mounted() {
+    // Add event listener to reposition any dropdowns when they open
+    document.addEventListener('click', this.checkAndRepositionDropdowns)
+  },
+  beforeDestroy() {
+    document.removeEventListener('click', this.checkAndRepositionDropdowns)
+  }
 }
 </script>
+
+<style scoped>
+/* Ensure our Knowledge dropdown appears above other elements */
+.knowledge-dropdown {
+  z-index: 5; /* Reduced from 100 to a lower value so it doesn't appear above modals */
+  position: relative;
+}
+
+/* Add a subtle highlight for the Knowledge button */
+.text-blue-400 {
+  color: #60a5fa;
+}
+
+.text-blue-300:hover {
+  color: #93c5fd;
+}
+
+/* Force menu to appear above all other elements with improved styling */
+:deep([role='menu']) {
+  z-index: 9999 !important;
+  position: fixed !important;
+  overflow: visible !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background-color: #1f2937 !important; /* Make sure background color is solid */
+}
+
+/* Enhance menu items styling */
+:deep([role='menu'] button) {
+  display: flex !important;
+  align-items: center !important;
+  padding: 10px 12px !important;
+  border-radius: 4px !important;
+  margin: 2px 4px !important;
+}
+
+:deep([role='menu'] button:hover) {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Improve icon styling */
+:deep([role='menu'] button span) {
+  margin-right: 8px !important;
+  color: #60a5fa !important;
+}
+
+/* Ensure menu transition is smooth */
+:deep(.menu-enter-active),
+:deep(.menu-leave-active) {
+  transition: opacity 0.15s ease !important;
+}
+
+:deep(.menu-enter),
+:deep(.menu-leave-to) {
+  opacity: 0 !important;
+}
+</style>
