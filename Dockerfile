@@ -1,12 +1,12 @@
 ### STAGE 0: Build client ###
-FROM node:20-bullseye AS build
+FROM mcr.microsoft.com/devcontainers/javascript-node:0-20-bullseye AS build
 WORKDIR /client
 COPY /client /client
 RUN npm ci && npm cache clean --force
 RUN npm run generate
 
 ### STAGE 1: Build server ###
-FROM node:20-bullseye
+FROM mcr.microsoft.com/devcontainers/javascript-node:0-20-bullseye
 
 ENV NODE_ENV=production
 
