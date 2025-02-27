@@ -10,16 +10,17 @@ FROM node:20-bullseye
 
 ENV NODE_ENV=production
 
-RUN apk update && \
-  apk add --no-cache --update \
-  curl \
-  tzdata \
-  ffmpeg \
-  make \
-  python3 \
-  g++ \
-  tini \
-  unzip
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    curl \
+    tzdata \
+    ffmpeg \
+    make \
+    python3 \
+    g++ \
+    tini \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /client/dist /client/dist
 COPY index.js package* /
@@ -42,7 +43,8 @@ RUN case "$TARGETPLATFORM" in \
 
 RUN npm ci --only=production
 
-RUN apk del make python3 g++
+RUN apt-get purge -y make python3 g++ && \
+    apt-get autoremove -y
 
 EXPOSE 80
 
