@@ -19,9 +19,7 @@ RUN apk update && \
   python3 \
   g++ \
   tini \
-  unzip \
-  libc6-compat \
-  gcompat
+  unzip
 
 COPY --from=build /client/dist /client/dist
 COPY index.js package* /
@@ -42,8 +40,7 @@ RUN case "$TARGETPLATFORM" in \
   unzip /tmp/library.zip -d $NUSQLITE3_DIR && \
   rm /tmp/library.zip
 
-RUN npm ci --only=production && \
-    npm install chromadb-default-embed
+RUN npm ci --only=production
 
 RUN apk del make python3 g++
 
