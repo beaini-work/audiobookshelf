@@ -1,8 +1,9 @@
 ### EXAMPLE DOCKER COMPOSE ###
 services:
   audiobookshelf:
-    image: ghcr.io/advplyr/audiobookshelf:latest
-    # Remove the ports section since Caddy will handle external access
+    build:
+      context: .
+      dockerfile: Dockerfile    # ABS runs on port 13378 by default. If you want to change
     volumes:
       # These volumes are needed to keep your library persistent
       # and allow media to be accessed by the ABS server.
@@ -21,7 +22,7 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_MODEL=${OPENAI_MODEL}
       - OPENAI_TEMPERATURE=${OPENAI_TEMPERATURE}
-      - CHROMA_HOST=chroma
+      - CHROMA_HOST=${CHROMA_HOST}
       - CHROMA_PORT=8000
       - CHROMA_AUTH_PROVIDER=${CHROMA_AUTH_PROVIDER}
       - CHROMA_AUTH_CREDENTIALS=${CHROMA_AUTH_CREDENTIALS}
@@ -32,19 +33,18 @@ services:
     # user: 1000:1000
     networks:
       - chroma_net
-      - caddy_net
+      - tunnel_net
 
-  caddy:
-    image: caddy:latest
-    ports:
-      - "80:80"     # HTTP
-      - "443:443"   # HTTPS
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
     volumes:
-      - ./caddy_data:/data
-      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./cloudflared:/home/nonroot/.cloudflared  # Store tunnel credentials
     restart: unless-stopped
     networks:
-      - caddy_net
+      - tunnel_net
 
   chroma:
     image: chromadb/chroma:latest
@@ -63,5 +63,5 @@ services:
 networks:
   chroma_net:
     driver: bridge
-  caddy_net:
+  tunnel_net:
     driver: bridge
