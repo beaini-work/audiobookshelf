@@ -19,8 +19,6 @@ RUN apk update && \
   python3 \
   g++ \
   tini \
-  onnxruntime \
-  onnxruntime-dev \
   unzip \
   libc6-compat \
   gcompat
@@ -44,7 +42,8 @@ RUN case "$TARGETPLATFORM" in \
   unzip /tmp/library.zip -d $NUSQLITE3_DIR && \
   rm /tmp/library.zip
 
-RUN npm ci --only=production
+RUN npm ci --only=production && \
+    npm install chromadb-default-embed
 
 RUN apk del make python3 g++
 
