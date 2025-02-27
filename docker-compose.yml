@@ -2,10 +2,7 @@
 services:
   audiobookshelf:
     image: ghcr.io/advplyr/audiobookshelf:latest
-    # ABS runs on port 13378 by default. If you want to change
-    # the port, only change the external port, not the internal port
-    ports:
-      - 13378:80
+    # Remove the ports section since Caddy will handle external access
     volumes:
       # These volumes are needed to keep your library persistent
       # and allow media to be accessed by the ABS server.
@@ -35,6 +32,19 @@ services:
     # user: 1000:1000
     networks:
       - chroma_net
+      - caddy_net
+
+  caddy:
+    image: caddy:latest
+    ports:
+      - "80:80"     # HTTP
+      - "443:443"   # HTTPS
+    volumes:
+      - ./caddy_data:/data
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    restart: unless-stopped
+    networks:
+      - caddy_net
 
   chroma:
     image: chromadb/chroma:latest
@@ -52,4 +62,6 @@ services:
 
 networks:
   chroma_net:
+    driver: bridge
+  caddy_net:
     driver: bridge
