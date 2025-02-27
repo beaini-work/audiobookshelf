@@ -1,12 +1,12 @@
 ### STAGE 0: Build client ###
-FROM node:20-alpine AS build
+FROM node:20-bullseye AS build
 WORKDIR /client
 COPY /client /client
 RUN npm ci && npm cache clean --force
 RUN npm run generate
 
 ### STAGE 1: Build server ###
-FROM node:20-alpine
+FROM node:20-bullseye
 
 ENV NODE_ENV=production
 
