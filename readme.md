@@ -12,9 +12,9 @@
   </p>
 </div>
 
-# About
+# Audiobookshelf Audiomind
 
-Audiobookshelf is a self-hosted audiobook and podcast server.
+Audiobookshelf Audiomind is a self-hosted audiobook and podcast server with AI-enhanced capabilities for deeper content interaction and knowledge retention.
 
 ### Features
 
@@ -36,16 +36,14 @@ Audiobookshelf is a self-hosted audiobook and podcast server.
   - Epub, pdf, cbr, cbz
   - Send ebook to device (i.e. Kindle)
 - Open RSS feeds for podcasts and audiobooks
+- **AI-Powered Transcription**: Automatically transcribe audio content on download with manual triggering option
+- **Smart Summarization**: Generate concise episode summaries post-transcription with manual refresh capability
+- **Podcast Q&A**: Interactive question answering using transcribed content from listened episodes
+- **Knowledge Retention Tools**: Real-time voice tests to reinforce episode content understanding
 
 Is there a feature you are looking for? [Suggest it](https://github.com/advplyr/audiobookshelf/issues/new/choose)
 
 Join us on [Discord](https://discord.gg/HQgCbd6E75)
-
-### Demo
-
-Check out the web client demo: https://audiobooks.dev/ (thanks for hosting [@Vito0912](https://github.com/Vito0912)!)
-
-Username/password: `demo`/`demo` (user account)
 
 ### Android App (beta)
 
